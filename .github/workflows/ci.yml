@@ -24,9 +24,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain components
+      - name: Select Rust toolchain
         run: |
-          rustup update stable
           rustup default stable
           rustup component add rustfmt
 
@@ -41,9 +40,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain components
+      - name: Select Rust toolchain
         run: |
-          rustup update stable
           rustup default stable
           rustup component add clippy
 
@@ -69,10 +67,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        run: |
-          rustup update stable
-          rustup default stable
+      - name: Select Rust toolchain
+        run: rustup default stable
 
       - name: Cache cargo registry and build output
         uses: actions/cache@v4
@@ -85,8 +81,17 @@ jobs:
           restore-keys: |
             test-${{ runner.os }}-
 
-      - name: Install cargo-nextest
-        run: cargo install cargo-nextest --locked
+      - name: Cache cargo-nextest binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-nextest
+          key: cargo-nextest-${{ runner.os }}
+
+      - name: Install cargo-nextest if missing
+        run: |
+          if ! command -v cargo-nextest >/dev/null 2>&1; then
+            cargo install cargo-nextest --locked
+          fi
 
       - name: Run tests
         run: cargo nextest run
