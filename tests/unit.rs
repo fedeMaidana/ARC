@@ -20,3 +20,6 @@ mod policy_tests;
 
 #[path = "unit/request_tests.rs"]
 mod request_tests;
+
+#[path = "unit/resource_tests.rs"]
+mod resource_tests;

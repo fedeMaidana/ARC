@@ -1,5 +1,7 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use crate::resource;
+
 use super::{ActionsConfig, ConsoleConfig, HttpConfig, ResourcesConfig};
 
 // ─── < Implementations > ────────────────────────────────────────────
@@ -28,23 +30,13 @@ impl ResourcesConfig {
     pub fn is_blocked_path(&self, resource: &str) -> bool {
         self.blocked_path_prefixes
             .iter()
-            .any(|blocked_prefix| resource.starts_with(blocked_prefix))
+            .any(|blocked_prefix| resource::matches_path_prefix(resource, blocked_prefix))
     }
 
     pub fn is_protected_resource(&self, resource: &str) -> bool {
-        for protected_resource in &self.protected {
-            if resource == protected_resource {
-                return true;
-            }
-
-            let protected_resource_inside_folder = format!("/{protected_resource}");
-
-            if resource.ends_with(&protected_resource_inside_folder) {
-                return true;
-            }
-        }
-
-        false
+        self.protected
+            .iter()
+            .any(|protected_resource| resource::matches_resource_name(resource, protected_resource))
     }
 }
 

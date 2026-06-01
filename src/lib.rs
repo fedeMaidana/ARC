@@ -11,4 +11,5 @@ pub mod json_api;
 pub mod output;
 pub mod policy;
 pub mod request;
+pub mod resource;
 pub mod ui;
