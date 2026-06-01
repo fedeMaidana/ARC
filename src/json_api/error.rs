@@ -27,3 +27,18 @@ pub enum JsonApiError {
     #[error("command can only be used with run action")]
     CommandOnlyAllowedForRun,
 }
+
+// ─── < Implementations > ────────────────────────────────────────────
+
+impl JsonApiError {
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::InvalidJson { .. } => "invalid_json",
+            Self::MissingAction => "missing_action",
+            Self::MissingCommand => "missing_command",
+            Self::EmptyCommand => "empty_command",
+            Self::ResourceNotAllowedForRun => "resource_not_allowed_for_run",
+            Self::CommandOnlyAllowedForRun => "command_only_allowed_for_run",
+        }
+    }
+}

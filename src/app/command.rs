@@ -67,7 +67,15 @@ fn handle_config_help_command() -> Result<i32> {
 }
 
 fn handle_decide_json_command() -> Result<i32> {
-    let request = json::read_request_from_stdin()?;
+    let request = match json::read_request_from_stdin() {
+        Ok(request) => request,
+        Err(error) => {
+            json::print_read_error(&error);
+
+            return Ok(2);
+        }
+    };
+
     let (loaded_config, _path) = config::load_from_default_locations().context("could not load ARC config")?;
 
     audit::prepare(&loaded_config.audit)?;

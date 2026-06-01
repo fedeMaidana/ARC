@@ -6,11 +6,17 @@ use crate::decision::Decision;
 use crate::executor::ExecutionReport;
 use crate::request::Request;
 
+// ─── < Constants > ──────────────────────────────────────────────────
+
+pub const JSON_API_VERSION: &str = "1";
+
 // ─── < Output Structs > ─────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]
 pub struct JsonDecisionResponse {
     pub ok: bool,
+    pub api_version: String,
+    pub kind: String,
     pub request: JsonRequestOutput,
     pub decision: JsonDecisionOutput,
     pub execution: JsonExecutionOutput,
@@ -19,6 +25,9 @@ pub struct JsonDecisionResponse {
 #[derive(Debug, Serialize)]
 pub struct JsonErrorResponse {
     pub ok: bool,
+    pub api_version: String,
+    pub kind: String,
+    pub error_code: String,
     pub error: String,
 }
 
@@ -33,6 +42,7 @@ pub struct JsonRequestOutput {
 pub struct JsonDecisionOutput {
     pub status: String,
     pub reason: String,
+    pub reason_code: String,
     pub risk: String,
 }
 
@@ -49,6 +59,8 @@ pub struct JsonExecutionOutput {
 pub fn decision_response_from_parts(request: &Request, decision: &Decision, execution_report: &ExecutionReport) -> JsonDecisionResponse {
     JsonDecisionResponse {
         ok: true,
+        api_version: JSON_API_VERSION.to_string(),
+        kind: "decision".to_string(),
         request: JsonRequestOutput {
             mode: request_mode_text(request).to_string(),
             action: request.action.clone(),
@@ -57,6 +69,7 @@ pub fn decision_response_from_parts(request: &Request, decision: &Decision, exec
         decision: JsonDecisionOutput {
             status: decision.status.as_text().to_string(),
             reason: decision.reason.as_text().to_string(),
+            reason_code: decision.reason.as_code().to_string(),
             risk: decision.risk.as_text().to_string(),
         },
         execution: JsonExecutionOutput {
@@ -69,8 +82,15 @@ pub fn decision_response_from_parts(request: &Request, decision: &Decision, exec
 }
 
 pub fn error_response(error: &impl std::fmt::Display) -> JsonErrorResponse {
+    error_response_with_code("application_error", error)
+}
+
+pub fn error_response_with_code(error_code: &str, error: &impl std::fmt::Display) -> JsonErrorResponse {
     JsonErrorResponse {
         ok: false,
+        api_version: JSON_API_VERSION.to_string(),
+        kind: "error".to_string(),
+        error_code: error_code.to_string(),
         error: error.to_string(),
     }
 }

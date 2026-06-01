@@ -185,11 +185,17 @@ fn decide_json_allowed_command_returns_machine_readable_response() {
     let response = json_stdout(&output);
 
     assert_eq!(response["ok"], true);
+    assert_eq!(response["api_version"], "1");
+    assert_eq!(response["kind"], "decision");
+
     assert_eq!(response["request"]["mode"], "check");
     assert_eq!(response["request"]["action"], "run");
     assert_eq!(response["request"]["resource"], "echo hello");
+
     assert_eq!(response["decision"]["status"], "allow");
     assert_eq!(response["decision"]["reason"], "action is allowed");
+    assert_eq!(response["decision"]["reason_code"], "action_allowed");
+
     assert_eq!(response["execution"]["kind"], "check_mode");
     assert_eq!(response["execution"]["allowed"], true);
     assert_eq!(response["execution"]["executed"], false);
@@ -226,7 +232,10 @@ fn decide_json_invalid_request_returns_json_error() {
     let response = json_stdout(&output);
 
     assert_eq!(response["ok"], false);
-    assert_eq!(response["error"], "could not parse JSON request");
+    assert_eq!(response["api_version"], "1");
+    assert_eq!(response["kind"], "error");
+    assert_eq!(response["error_code"], "missing_command");
+    assert_eq!(response["error"], "run action requires a command array");
 }
 
 // ─── < Helpers: Commands > ──────────────────────────────────────────
