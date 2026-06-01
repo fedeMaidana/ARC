@@ -102,9 +102,10 @@ impl ConsoleConfig {
 impl ConsoleCommandRule {
     pub fn policy(&self) -> ConsoleCommandPolicy {
         match self.mode.as_str() {
-            "deny" | "block" | "blocked" => ConsoleCommandPolicy::Deny,
+            "deny" => ConsoleCommandPolicy::Deny,
             "ask" => ConsoleCommandPolicy::Ask,
-            _ => ConsoleCommandPolicy::Allow,
+            "allow" => ConsoleCommandPolicy::Allow,
+            _ => ConsoleCommandPolicy::Deny,
         }
     }
 

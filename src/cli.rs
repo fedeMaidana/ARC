@@ -29,6 +29,7 @@ pub enum CliError {
 pub enum CliCommand {
     Init,
     ConfigPath,
+    ConfigCheck,
     ConfigShow,
     ConfigHelp,
     DecideJson,
@@ -60,6 +61,7 @@ impl CliCommand {
 
         match args[2].as_str() {
             "path" => Ok(Self::ConfigPath),
+            "check" => Ok(Self::ConfigCheck),
             "show" => Ok(Self::ConfigShow),
             "help" | "-h" | "--help" => Ok(Self::ConfigHelp),
             command => Err(CliError::UnknownConfigCommand { command: command.to_string() }),

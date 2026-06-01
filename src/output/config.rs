@@ -1,8 +1,9 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use std::error::Error as StdError;
 use std::path::Path;
 
-use crate::config::{Config, ConfigInitResult};
+use crate::config::{Config, ConfigError, ConfigInitResult};
 use crate::ui;
 
 use super::shared::print_list;
@@ -32,6 +33,30 @@ pub fn print_config_path_missing(default_path: &Path) {
     println!("  {} {}", ui::dim("default path:"), default_path.display());
     println!();
     println!("{}", ui::dim("Run: arc init"));
+}
+
+pub fn print_config_check_success(path: &Path) {
+    println!("{}", ui::green("✅ Config is valid"));
+    println!("  {} {}", ui::dim("path:"), path.display());
+}
+
+pub fn print_config_check_error(error: &ConfigError) {
+    println!("{}", ui::red("❌ Config error"));
+
+    match error {
+        ConfigError::Validation { source, .. } => {
+            for issue in source.issues() {
+                println!("  {issue}");
+            }
+        }
+        _ => {
+            println!("  {error}");
+
+            if let Some(source) = StdError::source(error) {
+                println!("  {} {}", ui::dim("caused by:"), source);
+            }
+        }
+    }
 }
 
 pub fn print_config(config: &Config, path: &Path) {

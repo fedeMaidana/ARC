@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use super::validation::validate;
 use super::{Config, ConfigError, resolve_config_path};
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -16,7 +17,14 @@ pub fn load(path: impl AsRef<Path>) -> Result<Config, ConfigError> {
         source,
     })?;
 
-    toml::from_str(&content).map_err(|source| ConfigError::Parse { path: path_display, source })
+    let config = toml::from_str(&content).map_err(|source| ConfigError::Parse {
+        path: path_display.clone(),
+        source,
+    })?;
+
+    validate(&config).map_err(|source| ConfigError::Validation { path: path_display, source })?;
+
+    Ok(config)
 }
 
 pub fn load_from_default_locations() -> Result<(Config, PathBuf), ConfigError> {

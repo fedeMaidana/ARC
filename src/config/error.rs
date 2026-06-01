@@ -4,6 +4,8 @@ use std::env;
 
 use thiserror::Error;
 
+use super::validation::ConfigValidationError;
+
 // ─── < Errors > ─────────────────────────────────────────────────────
 
 #[derive(Debug, Error)]
@@ -20,6 +22,13 @@ pub enum ConfigError {
         path: String,
         #[source]
         source: toml::de::Error,
+    },
+
+    #[error("config validation failed for '{path}'")]
+    Validation {
+        path: String,
+        #[source]
+        source: ConfigValidationError,
     },
 
     #[error("config file not found.\n\nRun:\n  arc init\n\nOr provide one manually:\n  ARC_CONFIG=/path/to/arc.toml arc run ls -la")]

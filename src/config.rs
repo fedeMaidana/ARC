@@ -6,6 +6,7 @@ mod loader;
 mod model;
 mod paths;
 mod rules;
+mod validation;
 
 // ─── < Public Exports > ─────────────────────────────────────────────
 
@@ -18,3 +19,4 @@ pub use self::model::{
 };
 pub use self::paths::{default_user_config_path, resolve_config_path};
 pub use self::rules::{ConsoleCommandPolicy, ConsoleSubcommandPolicy};
+pub use self::validation::{ConfigValidationError, ConfigValidationIssue, validate};

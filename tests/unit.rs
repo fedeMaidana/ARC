@@ -6,6 +6,9 @@ mod audit_tests;
 #[path = "unit/cli_tests.rs"]
 mod cli_tests;
 
+#[path = "unit/config_validation_tests.rs"]
+mod config_validation_tests;
+
 #[path = "unit/decision_tests.rs"]
 mod decision_tests;
 

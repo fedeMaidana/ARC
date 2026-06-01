@@ -20,6 +20,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
     match command {
         CliCommand::Init => handle_init_command(),
         CliCommand::ConfigPath => handle_config_path_command(),
+        CliCommand::ConfigCheck => handle_config_check_command(),
         CliCommand::ConfigShow => handle_config_show_command(),
         CliCommand::ConfigHelp => handle_config_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
@@ -50,6 +51,19 @@ fn handle_config_path_command() -> Result<i32> {
     output::print_config_path_missing(&default_path);
 
     Ok(1)
+}
+
+fn handle_config_check_command() -> Result<i32> {
+    match config::load_from_default_locations() {
+        Ok((_loaded_config, path)) => {
+            output::print_config_check_success(&path);
+            Ok(0)
+        }
+        Err(error) => {
+            output::print_config_check_error(&error);
+            Ok(2)
+        }
+    }
 }
 
 fn handle_config_show_command() -> Result<i32> {

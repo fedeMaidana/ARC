@@ -33,6 +33,7 @@ fn config_help_command_prints_config_usage() {
 
     assert!(stdout.contains("Config usage"));
     assert!(stdout.contains("arc config path"));
+    assert!(stdout.contains("arc config check"));
     assert!(stdout.contains("arc config show"));
 }
 
@@ -93,6 +94,35 @@ fn config_path_prints_config_path_from_environment() {
 
     assert!(stdout.contains("Config path"));
     assert!(stdout.contains(fixture.config_path.to_string_lossy().as_ref()));
+}
+
+#[test]
+fn config_check_prints_success_for_valid_config() {
+    let fixture = TestFixture::new("config-check-valid");
+    let output = fixture.run(&["config", "check"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Config is valid"));
+    assert!(stdout.contains(fixture.config_path.to_string_lossy().as_ref()));
+}
+
+#[test]
+fn config_check_prints_validation_errors_for_invalid_config() {
+    let fixture = TestFixture::with_config_content("config-check-invalid", invalid_config_content());
+    let output = fixture.run(&["config", "check"]);
+
+    assert_eq!(output.status.code(), Some(2));
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Config error"));
+    assert!(stdout.contains("console.commands[git].mode"));
+    assert!(stdout.contains("unsupported value \"alow\""));
+    assert!(stdout.contains("http.blocked_cidrs[0]"));
+    assert!(stdout.contains("invalid CIDR \"192.168/33\""));
 }
 
 // ─── < Tests: Human CLI Policy Flow > ───────────────────────────────
@@ -266,6 +296,18 @@ impl TestFixture {
         let config_path = root_dir.join("arc.toml");
 
         fs::write(&config_path, test_config_content(&root_dir)).expect("test config should be written");
+
+        Self { root_dir, config_path }
+    }
+
+    fn with_config_content(name: &str, config_content: String) -> Self {
+        let root_dir = unique_temp_dir(name);
+
+        fs::create_dir_all(&root_dir).expect("test fixture directory should be created");
+
+        let config_path = root_dir.join("arc.toml");
+
+        fs::write(&config_path, config_content).expect("test config should be written");
 
         Self { root_dir, config_path }
     }
@@ -500,4 +542,48 @@ fn test_config_content(root_dir: &Path) -> String {
 "#,
         root_dir.display()
     )
+}
+
+fn invalid_config_content() -> String {
+    r#"config_version = 1
+
+[policy]
+  default_action = "deny"
+
+[actions]
+  allowed = ["run"]
+  blocked = []
+  need_resource = ["run"]
+  ask = []
+
+[resources]
+  protected = []
+  blocked_path_prefixes = []
+
+[http]
+  allowed_schemes = ["https"]
+  blocked_hosts = []
+  blocked_cidrs = ["192.168/33"]
+
+[console]
+  default_command_policy = "deny"
+  allow_path_resolution = true
+  blocked_arguments = ["-rf"]
+
+  [[console.commands]]
+    name = "git"
+    mode = "alow"
+    allowed_paths = []
+
+[audit]
+  enabled = false
+  path = "audit.log"
+
+[execution]
+  timeout_seconds = 10
+  max_output_bytes = 100000
+  inherit_environment = false
+  environment = []
+"#
+    .to_string()
 }
