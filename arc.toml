@@ -81,6 +81,7 @@ config_version = 1
 
 [console]
   default_command_policy = "deny"
+
   allow_path_resolution = true
 
   blocked_arguments = [
@@ -96,6 +97,7 @@ config_version = 1
   [[console.commands]]
     name = "cargo"
     mode = "allow"
+    allowed_paths = []
     allowed_subcommands = [
       "build",
       "check",
@@ -121,6 +123,7 @@ config_version = 1
   [[console.commands]]
     name = "git"
     mode = "allow"
+    allowed_paths = []
     allowed_subcommands = [
       "status",
       "diff",
@@ -147,30 +150,37 @@ config_version = 1
   [[console.commands]]
     name = "rg"
     mode = "allow"
+    allowed_paths = []
 
   [[console.commands]]
     name = "ls"
     mode = "allow"
+    allowed_paths = []
 
   [[console.commands]]
     name = "pwd"
     mode = "allow"
+    allowed_paths = []
 
   [[console.commands]]
     name = "cat"
     mode = "allow"
+    allowed_paths = []
 
   [[console.commands]]
     name = "echo"
     mode = "allow"
+    allowed_paths = []
 
   [[console.commands]]
     name = "whoami"
     mode = "allow"
+    allowed_paths = []
 
   [[console.commands]]
     name = "date"
     mode = "allow"
+    allowed_paths = []
 
   [[console.commands]]
     name = "rm"
@@ -266,7 +276,7 @@ config_version = 1
   enabled = true
   path = "~/.local/share/arc/audit.log"
 
-# ─── < Execution > ──────────────────────────────────────────────────────────
+# ─── < Execution > ──────────────────────────────────────────────────────
 
 [execution]
   timeout_seconds = 10
