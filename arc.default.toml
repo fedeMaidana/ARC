@@ -3,6 +3,8 @@ config_version = 1
 [policy]
   default_action = "deny"
 
+# ─── < Actions > ────────────────────────────────────────────────────────
+
 [actions]
   allowed = [
     "list_files",
@@ -25,18 +27,29 @@ config_version = 1
 
   ask = []
 
+# ─── < Resources > ──────────────────────────────────────────────────────
+
 [resources]
   protected_names = [
     ".env",
     "id_rsa",
-    "secrets.txt"
+    "id_ed25519",
+    "secrets.txt",
+    "credentials.json",
+    "Cargo.lock"
   ]
 
   blocked_path_prefixes = [
     "/etc/",
     "/root/",
+    "/var/run/",
+    "/proc/",
+    "/sys/",
+    "/dev/",
     "../"
   ]
+
+# ─── < HTTP > ───────────────────────────────────────────────────────────
 
 [http]
   allowed_schemes = [
@@ -64,57 +77,11 @@ config_version = 1
     "fe80::/10"
   ]
 
-  blocked_targets = [
-    "http://localhost",
-    "https://localhost",
-    "http://127.0.0.1",
-    "https://127.0.0.1",
-    "http://0.0.0.0",
-    "https://0.0.0.0",
-    "http://[::1]",
-    "https://[::1]"
-  ]
+# ─── < Console > ────────────────────────────────────────────────────────
 
 [console]
   default_command_policy = "deny"
   allow_path_resolution = true
-
-  allowed_commands = [
-    "cargo",
-    "git",
-    "rg",
-    "ls",
-    "pwd",
-    "cat",
-    "echo",
-    "whoami",
-    "date"
-  ]
-
-  blocked_commands = [
-    "rm",
-    "sudo",
-    "su",
-    "sh",
-    "bash",
-    "zsh",
-    "fish",
-    "chmod",
-    "chown",
-    "curl",
-    "wget",
-    "ssh",
-    "scp",
-    "nc",
-    "ncat",
-    "dd",
-    "mkfs",
-    "mount",
-    "umount",
-    "systemctl",
-    "kill",
-    "pkill"
-  ]
 
   blocked_arguments = [
     "-rf",
@@ -125,33 +92,6 @@ config_version = 1
     "..",
     "~"
   ]
-
-  ask_commands = []
-
-  [[console.commands]]
-    name = "git"
-    mode = "allow"
-    allowed_subcommands = [
-      "status",
-      "diff",
-      "log",
-      "show",
-      "branch"
-    ]
-    ask_subcommands = [
-      "add",
-      "commit"
-    ]
-    blocked_subcommands = [
-      "push",
-      "credential",
-      "remote"
-    ]
-    blocked_arguments = [
-      "--upload-pack",
-      "--receive-pack"
-    ]
-    ask_arguments = []
 
   [[console.commands]]
     name = "cargo"
@@ -179,13 +119,154 @@ config_version = 1
     ]
 
   [[console.commands]]
+    name = "git"
+    mode = "allow"
+    allowed_subcommands = [
+      "status",
+      "diff",
+      "log",
+      "show",
+      "branch"
+    ]
+    ask_subcommands = [
+      "add",
+      "commit"
+    ]
+    blocked_subcommands = [
+      "push",
+      "credential",
+      "remote",
+      "config"
+    ]
+    blocked_arguments = [
+      "--upload-pack",
+      "--receive-pack"
+    ]
+    ask_arguments = []
+
+  [[console.commands]]
+    name = "rg"
+    mode = "allow"
+
+  [[console.commands]]
+    name = "ls"
+    mode = "allow"
+
+  [[console.commands]]
+    name = "pwd"
+    mode = "allow"
+
+  [[console.commands]]
+    name = "cat"
+    mode = "allow"
+
+  [[console.commands]]
+    name = "echo"
+    mode = "allow"
+
+  [[console.commands]]
+    name = "whoami"
+    mode = "allow"
+
+  [[console.commands]]
+    name = "date"
+    mode = "allow"
+
+  [[console.commands]]
     name = "rm"
     mode = "deny"
-    risk = "critical"
+
+  [[console.commands]]
+    name = "sudo"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "su"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "sh"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "bash"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "zsh"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "fish"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "chmod"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "chown"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "curl"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "wget"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "ssh"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "scp"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "nc"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "ncat"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "dd"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "mkfs"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "mount"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "umount"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "systemctl"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "kill"
+    mode = "deny"
+
+  [[console.commands]]
+    name = "pkill"
+    mode = "deny"
+
+# ─── < Audit > ──────────────────────────────────────────────────────────
 
 [audit]
   enabled = true
   path = "~/.local/share/arc/audit.log"
+
+# ─── < Execution > ──────────────────────────────────────────────────────────
 
 [execution]
   timeout_seconds = 10
