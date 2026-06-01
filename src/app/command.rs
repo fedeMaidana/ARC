@@ -81,7 +81,7 @@ fn handle_decide_json_command() -> Result<i32> {
     audit::prepare(&loaded_config.audit)?;
 
     let decision = policy::decide(&request, &loaded_config);
-    let execution_report = executor::execute(&request, &decision, &loaded_config.execution);
+    let execution_report = executor::execute(&request, &decision, &loaded_config.execution, &loaded_config.console);
 
     audit::record("json_api", &loaded_config.audit, &request, &decision, &execution_report)?;
 
@@ -102,9 +102,9 @@ fn handle_policy_request(request: Request) -> Result<i32> {
     output::print_decision(&request, &decision);
 
     let execution_report = if decision.should_ask() && !request.is_check_mode() {
-        approval::ask_and_maybe_execute(&request, &loaded_config.execution)?
+        approval::ask_and_maybe_execute(&request, &loaded_config.execution, &loaded_config.console)?
     } else {
-        executor::execute(&request, &decision, &loaded_config.execution)
+        executor::execute(&request, &decision, &loaded_config.execution, &loaded_config.console)
     };
 
     audit::record("cli", &loaded_config.audit, &request, &decision, &execution_report)?;

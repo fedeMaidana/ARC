@@ -2,7 +2,7 @@
 
 use std::process::{Command, Stdio};
 
-use crate::config::ExecutionConfig;
+use crate::config::{ConsoleConfig, ExecutionConfig};
 use crate::request::Request;
 
 use super::command::resolve_command_path;
@@ -13,14 +13,14 @@ use super::process::{CommandWaitResult, wait_for_child};
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn run(request: &Request, execution_config: &ExecutionConfig) -> ExecutionReport {
+pub fn run(request: &Request, execution_config: &ExecutionConfig, console_config: &ConsoleConfig) -> ExecutionReport {
     let Some(command_name) = request.command_name() else {
         return ExecutionReport::MissingCommand;
     };
 
     let command_line = request.resource.clone();
 
-    let command_path = match resolve_command_path(command_name) {
+    let command_path = match resolve_command_path(command_name, console_config) {
         Ok(command_path) => command_path,
         Err(details) => {
             return ExecutionReport::CommandFailed(CommandExecutionError { command_line, details });

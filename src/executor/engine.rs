@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::config::ExecutionConfig;
+use crate::config::{ConsoleConfig, ExecutionConfig};
 use crate::decision::Decision;
 use crate::request::Request;
 
@@ -9,7 +9,7 @@ use super::model::ExecutionReport;
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn execute(request: &Request, decision: &Decision, execution_config: &ExecutionConfig) -> ExecutionReport {
+pub fn execute(request: &Request, decision: &Decision, execution_config: &ExecutionConfig, console_config: &ConsoleConfig) -> ExecutionReport {
     if request.is_check_mode() {
         return ExecutionReport::CheckMode {
             allowed: !decision.is_denied(),
@@ -24,22 +24,22 @@ pub fn execute(request: &Request, decision: &Decision, execution_config: &Execut
         return ExecutionReport::AskRequired;
     }
 
-    execute_allowed_request(request, execution_config)
+    execute_allowed_request(request, execution_config, console_config)
 }
 
-pub fn execute_approved(request: &Request, execution_config: &ExecutionConfig) -> ExecutionReport {
+pub fn execute_approved(request: &Request, execution_config: &ExecutionConfig, console_config: &ConsoleConfig) -> ExecutionReport {
     if request.is_check_mode() {
         return ExecutionReport::CheckMode { allowed: true };
     }
 
-    execute_allowed_request(request, execution_config)
+    execute_allowed_request(request, execution_config, console_config)
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
 
-fn execute_allowed_request(request: &Request, execution_config: &ExecutionConfig) -> ExecutionReport {
+fn execute_allowed_request(request: &Request, execution_config: &ExecutionConfig, console_config: &ConsoleConfig) -> ExecutionReport {
     if request.is_run_command() {
-        return console::run(request, execution_config);
+        return console::run(request, execution_config, console_config);
     }
 
     ExecutionReport::NoExecutionNeeded

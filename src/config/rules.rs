@@ -62,7 +62,8 @@ impl ConsoleConfig {
             return true;
         }
 
-        self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Allow)
+        self.command_rule(command_name)
+            .is_some_and(|rule| matches!(rule.policy(), ConsoleCommandPolicy::Allow | ConsoleCommandPolicy::Ask))
     }
 
     pub fn is_blocked_command(&self, command_name: &str) -> bool {
@@ -78,7 +79,11 @@ impl ConsoleConfig {
     }
 
     pub fn command_should_ask(&self, command_name: &str) -> bool {
-        self.ask_commands.iter().any(|command| command == command_name)
+        if self.ask_commands.iter().any(|command| command == command_name) {
+            return true;
+        }
+
+        self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Ask)
     }
 
     pub fn command_rule(&self, command_name: &str) -> Option<&ConsoleCommandRule> {
