@@ -15,5 +15,8 @@ mod executor_tests;
 #[path = "unit/json_api_tests.rs"]
 mod json_api_tests;
 
+#[path = "unit/policy_tests.rs"]
+mod policy_tests;
+
 #[path = "unit/request_tests.rs"]
 mod request_tests;
