@@ -12,6 +12,9 @@ mod decision_tests;
 #[path = "unit/executor_tests.rs"]
 mod executor_tests;
 
+#[path = "unit/http_target_tests.rs"]
+mod http_target_tests;
+
 #[path = "unit/json_api_tests.rs"]
 mod json_api_tests;
 

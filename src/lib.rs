@@ -7,6 +7,7 @@ pub mod cli;
 pub mod config;
 pub mod decision;
 pub mod executor;
+pub mod http_target;
 pub mod json_api;
 pub mod output;
 pub mod policy;

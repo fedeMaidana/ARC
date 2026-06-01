@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::resource;
+use crate::{http_target, resource};
 
 use super::{ActionsConfig, ConsoleConfig, HttpConfig, ResourcesConfig};
 
@@ -42,24 +42,9 @@ impl ResourcesConfig {
 
 impl HttpConfig {
     pub fn is_blocked_target(&self, resource: &str) -> bool {
-        for blocked_target in &self.blocked_targets {
-            if resource == blocked_target {
-                return true;
-            }
-
-            let blocked_target_with_slash = format!("{blocked_target}/");
-            let blocked_target_with_port = format!("{blocked_target}:");
-
-            if resource.starts_with(&blocked_target_with_slash) {
-                return true;
-            }
-
-            if resource.starts_with(&blocked_target_with_port) {
-                return true;
-            }
-        }
-
-        false
+        self.blocked_targets
+            .iter()
+            .any(|blocked_target| http_target::matches_blocked_target(resource, blocked_target))
     }
 }
 

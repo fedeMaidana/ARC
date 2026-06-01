@@ -244,6 +244,16 @@ fn denies_invalid_http_url() {
 }
 
 #[test]
+fn denies_unsupported_http_scheme() {
+    let config = default_config();
+    let request = request("http_get", &["file:///etc/passwd"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::InvalidHttpUrl, RiskLevel::Medium);
+}
+
+#[test]
 fn denies_blocked_http_target() {
     let config = default_config();
     let request = request("http_get", &["http://localhost:3000"]);
@@ -251,6 +261,36 @@ fn denies_blocked_http_target() {
     let decision = policy::decide(&request, &config);
 
     assert_decision(decision, DecisionStatus::Deny, DecisionReason::HttpTargetBlocked, RiskLevel::High);
+}
+
+#[test]
+fn denies_blocked_ipv6_loopback_http_target() {
+    let config = default_config();
+    let request = request("http_get", &["http://[::1]:3000"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::HttpTargetBlocked, RiskLevel::High);
+}
+
+#[test]
+fn denies_blocked_unspecified_ipv4_http_target() {
+    let config = default_config();
+    let request = request("http_get", &["http://0.0.0.0:3000"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::HttpTargetBlocked, RiskLevel::High);
+}
+
+#[test]
+fn allows_domain_that_only_starts_with_blocked_host_text() {
+    let config = default_config();
+    let request = request("http_get", &["http://localhost.evil.com"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Allow, DecisionReason::ActionAllowed, RiskLevel::Medium);
 }
 
 #[test]
@@ -278,7 +318,16 @@ fn default_config() -> Config {
             blocked_path_prefixes: strings(&["/etc/", "/root/", "../"]),
         },
         http: HttpConfig {
-            blocked_targets: strings(&["http://localhost", "https://localhost", "http://127.0.0.1", "https://127.0.0.1"]),
+            blocked_targets: strings(&[
+                "http://localhost",
+                "https://localhost",
+                "http://127.0.0.1",
+                "https://127.0.0.1",
+                "http://0.0.0.0",
+                "https://0.0.0.0",
+                "http://[::1]",
+                "https://[::1]",
+            ]),
         },
         console: ConsoleConfig {
             allowed_commands: strings(&["cargo", "git", "rg", "ls", "pwd", "cat", "echo"]),

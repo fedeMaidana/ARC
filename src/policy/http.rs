@@ -2,6 +2,7 @@
 
 use crate::config::Config;
 use crate::decision::{Decision, DecisionReason, RiskLevel};
+use crate::http_target;
 use crate::request::Request;
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -11,7 +12,7 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
         return None;
     }
 
-    if !is_valid_url(&request.resource) {
+    if !http_target::is_valid_http_url(&request.resource) {
         return Some(Decision::deny_with_risk(DecisionReason::InvalidHttpUrl, RiskLevel::Medium));
     }
 
@@ -20,10 +21,4 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
     }
 
     None
-}
-
-// ─── < Private Functions > ──────────────────────────────────────────
-
-fn is_valid_url(resource: &str) -> bool {
-    resource.starts_with("https://") || resource.starts_with("http://")
 }
