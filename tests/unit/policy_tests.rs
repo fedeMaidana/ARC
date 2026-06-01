@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use arc::config::{ActionsConfig, AuditConfig, Config, ConsoleConfig, ExecutionConfig, HttpConfig, ResourcesConfig};
+use arc::config::{ActionsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, ResourcesConfig};
 use arc::decision::{Decision, DecisionReason, DecisionStatus, RiskLevel};
 use arc::policy;
 use arc::request::{Request, RequestMode};
@@ -157,6 +157,78 @@ fn denies_console_argument_that_targets_blocked_path_after_normalization() {
     let decision = policy::decide(&request, &config);
 
     assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleArgumentBlocked, RiskLevel::Critical);
+}
+
+// ─── < Tests: Console Command Matrix > ──────────────────────────────
+
+#[test]
+fn allows_configured_command_subcommand() {
+    let config = default_config();
+    let request = request("run", &["git", "status"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Allow, DecisionReason::ActionAllowed, RiskLevel::Low);
+}
+
+#[test]
+fn asks_for_configured_command_subcommand() {
+    let config = default_config();
+    let request = request("run", &["git", "commit"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Ask, DecisionReason::ConsoleSubcommandRequiresApproval, RiskLevel::Medium);
+}
+
+#[test]
+fn denies_blocked_command_subcommand() {
+    let config = default_config();
+    let request = request("run", &["git", "push"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleSubcommandBlocked, RiskLevel::Critical);
+}
+
+#[test]
+fn denies_unlisted_command_subcommand_when_allowlist_exists() {
+    let config = default_config();
+    let request = request("run", &["git", "rebase"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleSubcommandNotAllowed, RiskLevel::High);
+}
+
+#[test]
+fn denies_missing_command_subcommand_when_allowlist_exists() {
+    let config = default_config();
+    let request = request("run", &["git"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleSubcommandRequired, RiskLevel::Medium);
+}
+
+#[test]
+fn denies_command_specific_blocked_argument() {
+    let config = default_config();
+    let request = request("run", &["git", "status", "--upload-pack"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleArgumentBlocked, RiskLevel::Critical);
+}
+
+#[test]
+fn asks_for_command_specific_argument() {
+    let config = default_config();
+    let request = request("run", &["cargo", "check", "--release"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Ask, DecisionReason::ConsoleArgumentRequiresApproval, RiskLevel::Medium);
 }
 
 // ─── < Tests: Resource Rules > ──────────────────────────────────────
@@ -334,10 +406,32 @@ fn default_config() -> Config {
             blocked_commands: strings(&["rm", "sudo", "su", "sh", "bash"]),
             blocked_arguments: strings(&["-rf", "--no-preserve-root", "/", "/etc", "/root", "..", "~"]),
             ask_commands: Vec::new(),
+            command_rules: command_rules(),
         },
         audit: AuditConfig::default(),
         execution: ExecutionConfig::default(),
     }
+}
+
+fn command_rules() -> Vec<ConsoleCommandRule> {
+    vec![
+        ConsoleCommandRule {
+            name: "git".to_string(),
+            allowed_subcommands: strings(&["status", "diff", "log", "show", "branch"]),
+            blocked_subcommands: strings(&["push", "credential", "remote"]),
+            ask_subcommands: strings(&["add", "commit"]),
+            blocked_arguments: strings(&["--upload-pack", "--receive-pack"]),
+            ask_arguments: Vec::new(),
+        },
+        ConsoleCommandRule {
+            name: "cargo".to_string(),
+            allowed_subcommands: strings(&["build", "check", "fmt", "test", "clippy", "nextest"]),
+            blocked_subcommands: strings(&["publish", "install", "login", "owner"]),
+            ask_subcommands: strings(&["run"]),
+            blocked_arguments: Vec::new(),
+            ask_arguments: strings(&["--release"]),
+        },
+    ]
 }
 
 fn request(action: &str, command_parts: &[&str]) -> Request {

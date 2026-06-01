@@ -53,6 +53,10 @@ fn decision_reason_has_stable_text() {
     assert_eq!(DecisionReason::ResourceRequired.as_text(), "resource is required");
 
     assert_eq!(DecisionReason::ConsoleCommandRequiresApproval.as_text(), "console command requires user approval");
+
+    assert_eq!(DecisionReason::ConsoleSubcommandNotAllowed.as_text(), "console subcommand is not allowed");
+
+    assert_eq!(DecisionReason::ConsoleArgumentRequiresApproval.as_text(), "console argument requires user approval");
 }
 
 #[test]

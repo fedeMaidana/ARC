@@ -28,6 +28,7 @@ pub fn test_config() -> Config {
             blocked_commands: strings(&["rm"]),
             blocked_arguments: strings(&["--danger"]),
             ask_commands: Vec::new(),
+            command_rules: Vec::new(),
         },
         audit: AuditConfig {
             enabled: false,

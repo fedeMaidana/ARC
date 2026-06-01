@@ -2,7 +2,7 @@
 
 use crate::{http_target, resource};
 
-use super::{ActionsConfig, ConsoleConfig, HttpConfig, ResourcesConfig};
+use super::{ActionsConfig, ConsoleCommandRule, ConsoleConfig, HttpConfig, ResourcesConfig};
 
 // ─── < Implementations > ────────────────────────────────────────────
 
@@ -64,4 +64,75 @@ impl ConsoleConfig {
     pub fn command_should_ask(&self, command_name: &str) -> bool {
         self.ask_commands.iter().any(|command| command == command_name)
     }
+
+    pub fn command_rule(&self, command_name: &str) -> Option<&ConsoleCommandRule> {
+        self.command_rules.iter().find(|rule| rule.name == command_name)
+    }
+
+    pub fn is_blocked_command_argument(&self, command_name: &str, argument: &str) -> bool {
+        self.command_rule(command_name)
+            .is_some_and(|rule| rule.is_blocked_argument(argument))
+    }
+
+    pub fn command_argument_should_ask(&self, command_name: &str, argument: &str) -> bool {
+        self.command_rule(command_name)
+            .is_some_and(|rule| rule.argument_should_ask(argument))
+    }
+}
+
+impl ConsoleCommandRule {
+    pub fn subcommand_policy(&self, subcommand: Option<&str>) -> ConsoleSubcommandPolicy {
+        if let Some(subcommand) = subcommand {
+            if self.is_blocked_subcommand(subcommand) {
+                return ConsoleSubcommandPolicy::Blocked;
+            }
+
+            if self.subcommand_should_ask(subcommand) {
+                return ConsoleSubcommandPolicy::Ask;
+            }
+
+            if !self.allowed_subcommands.is_empty() && !self.is_allowed_subcommand(subcommand) {
+                return ConsoleSubcommandPolicy::NotAllowed;
+            }
+
+            return ConsoleSubcommandPolicy::Allowed;
+        }
+
+        if !self.allowed_subcommands.is_empty() {
+            return ConsoleSubcommandPolicy::Required;
+        }
+
+        ConsoleSubcommandPolicy::Allowed
+    }
+
+    fn is_allowed_subcommand(&self, subcommand: &str) -> bool {
+        self.allowed_subcommands.iter().any(|allowed| allowed == subcommand)
+    }
+
+    fn is_blocked_subcommand(&self, subcommand: &str) -> bool {
+        self.blocked_subcommands.iter().any(|blocked| blocked == subcommand)
+    }
+
+    fn subcommand_should_ask(&self, subcommand: &str) -> bool {
+        self.ask_subcommands.iter().any(|ask| ask == subcommand)
+    }
+
+    fn is_blocked_argument(&self, argument: &str) -> bool {
+        self.blocked_arguments.iter().any(|blocked| blocked == argument)
+    }
+
+    fn argument_should_ask(&self, argument: &str) -> bool {
+        self.ask_arguments.iter().any(|ask| ask == argument)
+    }
+}
+
+// ─── < Enums > ──────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConsoleSubcommandPolicy {
+    Allowed,
+    Ask,
+    Blocked,
+    NotAllowed,
+    Required,
 }

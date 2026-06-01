@@ -57,6 +57,7 @@ pub fn print_config(config: &Config, path: &Path) {
     print_list("blocked commands", &config.console.blocked_commands);
     print_list("blocked arguments", &config.console.blocked_arguments);
     print_list("ask commands", &config.console.ask_commands);
+    print_console_command_rules(config);
 
     println!("{}", ui::section("Audit"));
     println!("  {} {}", ui::bold("enabled"), config.audit.enabled);
@@ -72,6 +73,43 @@ pub fn print_config(config: &Config, path: &Path) {
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
+
+fn print_console_command_rules(config: &Config) {
+    println!("  {}", ui::bold("command rules"));
+
+    if config.console.command_rules.is_empty() {
+        println!("    {}", ui::dim("none"));
+        println!();
+
+        return;
+    }
+
+    for rule in &config.console.command_rules {
+        println!("    - {}", ui::bold(&rule.name));
+
+        if !rule.allowed_subcommands.is_empty() {
+            println!("      allowed subcommands: {}", rule.allowed_subcommands.join(", "));
+        }
+
+        if !rule.ask_subcommands.is_empty() {
+            println!("      ask subcommands: {}", rule.ask_subcommands.join(", "));
+        }
+
+        if !rule.blocked_subcommands.is_empty() {
+            println!("      blocked subcommands: {}", rule.blocked_subcommands.join(", "));
+        }
+
+        if !rule.blocked_arguments.is_empty() {
+            println!("      blocked arguments: {}", rule.blocked_arguments.join(", "));
+        }
+
+        if !rule.ask_arguments.is_empty() {
+            println!("      ask arguments: {}", rule.ask_arguments.join(", "));
+        }
+    }
+
+    println!();
+}
 
 fn print_execution_environment_variables(config: &Config) {
     println!("  {}", ui::bold("environment"));

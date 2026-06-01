@@ -47,6 +47,29 @@ pub struct ConsoleConfig {
 
     #[serde(default)]
     pub ask_commands: Vec<String>,
+
+    #[serde(default)]
+    pub command_rules: Vec<ConsoleCommandRule>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConsoleCommandRule {
+    pub name: String,
+
+    #[serde(default)]
+    pub allowed_subcommands: Vec<String>,
+
+    #[serde(default)]
+    pub blocked_subcommands: Vec<String>,
+
+    #[serde(default)]
+    pub ask_subcommands: Vec<String>,
+
+    #[serde(default)]
+    pub blocked_arguments: Vec<String>,
+
+    #[serde(default)]
+    pub ask_arguments: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
