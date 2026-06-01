@@ -6,6 +6,12 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    #[serde(default = "default_config_version")]
+    pub config_version: u32,
+
+    #[serde(default)]
+    pub policy: PolicyConfig,
+
     pub actions: ActionsConfig,
     pub resources: ResourcesConfig,
     pub http: HttpConfig,
@@ -16,6 +22,12 @@ pub struct Config {
 
     #[serde(default)]
     pub execution: ExecutionConfig,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PolicyConfig {
+    #[serde(default = "default_policy_action")]
+    pub default_action: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -30,31 +42,75 @@ pub struct ActionsConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct ResourcesConfig {
+    #[serde(default, alias = "protected_names")]
     pub protected: Vec<String>,
+
     pub blocked_path_prefixes: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct HttpConfig {
+    #[serde(default = "default_allowed_http_schemes")]
+    pub allowed_schemes: Vec<String>,
+
+    #[serde(default = "default_true")]
+    pub block_localhost: bool,
+
+    #[serde(default = "default_true")]
+    pub block_private_networks: bool,
+
+    #[serde(default = "default_true")]
+    pub block_link_local: bool,
+
+    #[serde(default = "default_true")]
+    pub block_metadata_services: bool,
+
+    #[serde(default)]
+    pub blocked_hosts: Vec<String>,
+
+    #[serde(default)]
+    pub blocked_cidrs: Vec<String>,
+
+    #[serde(default)]
     pub blocked_targets: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ConsoleConfig {
+    #[serde(default = "default_command_policy")]
+    pub default_command_policy: String,
+
+    #[serde(default = "default_allow_path_resolution")]
+    pub allow_path_resolution: bool,
+
+    #[serde(default)]
     pub allowed_commands: Vec<String>,
+
+    #[serde(default)]
     pub blocked_commands: Vec<String>,
+
+    #[serde(default)]
     pub blocked_arguments: Vec<String>,
 
     #[serde(default)]
     pub ask_commands: Vec<String>,
 
-    #[serde(default)]
+    #[serde(default, alias = "commands")]
     pub command_rules: Vec<ConsoleCommandRule>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ConsoleCommandRule {
     pub name: String,
+
+    #[serde(default = "default_command_rule_mode")]
+    pub mode: String,
+
+    #[serde(default)]
+    pub risk: Option<String>,
+
+    #[serde(default)]
+    pub allowed_paths: Vec<String>,
 
     #[serde(default)]
     pub allowed_subcommands: Vec<String>,
@@ -107,6 +163,14 @@ pub struct ExecutionEnvironmentVariable {
 
 // ─── < Implementations > ────────────────────────────────────────────
 
+impl Default for PolicyConfig {
+    fn default() -> Self {
+        Self {
+            default_action: default_policy_action(),
+        }
+    }
+}
+
 impl Default for AuditConfig {
     fn default() -> Self {
         Self {
@@ -129,6 +193,34 @@ impl Default for ExecutionConfig {
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
+
+fn default_config_version() -> u32 {
+    1
+}
+
+fn default_policy_action() -> String {
+    "deny".to_string()
+}
+
+fn default_allowed_http_schemes() -> Vec<String> {
+    vec!["http".to_string(), "https".to_string()]
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_command_policy() -> String {
+    "deny".to_string()
+}
+
+fn default_allow_path_resolution() -> bool {
+    true
+}
+
+fn default_command_rule_mode() -> String {
+    "allow".to_string()
+}
 
 fn default_audit_enabled() -> bool {
     true

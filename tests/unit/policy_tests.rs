@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use arc::config::{ActionsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, ResourcesConfig};
+use arc::config::{ActionsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig};
 use arc::decision::{Decision, DecisionReason, DecisionStatus, RiskLevel};
 use arc::policy;
 use arc::request::{Request, RequestMode};
@@ -356,6 +356,26 @@ fn denies_blocked_unspecified_ipv4_http_target() {
 }
 
 #[test]
+fn denies_private_ipv4_http_target() {
+    let config = default_config();
+    let request = request("http_get", &["http://192.168.1.10/status"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::HttpTargetBlocked, RiskLevel::High);
+}
+
+#[test]
+fn denies_link_local_metadata_http_target() {
+    let config = default_config();
+    let request = request("http_get", &["http://169.254.169.254/latest/meta-data"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::HttpTargetBlocked, RiskLevel::High);
+}
+
+#[test]
 fn allows_domain_that_only_starts_with_blocked_host_text() {
     let config = default_config();
     let request = request("http_get", &["http://localhost.evil.com"]);
@@ -379,6 +399,10 @@ fn allows_external_http_url_with_medium_risk() {
 
 fn default_config() -> Config {
     Config {
+        config_version: 1,
+        policy: PolicyConfig {
+            default_action: "deny".to_string(),
+        },
         actions: ActionsConfig {
             allowed: strings(&["list_files", "read_file", "http_get", "run"]),
             blocked: strings(&["delete_file", "write_file", "run_shell"]),
@@ -390,6 +414,23 @@ fn default_config() -> Config {
             blocked_path_prefixes: strings(&["/etc/", "/root/", "../"]),
         },
         http: HttpConfig {
+            allowed_schemes: strings(&["http", "https"]),
+            block_localhost: true,
+            block_private_networks: true,
+            block_link_local: true,
+            block_metadata_services: true,
+            blocked_hosts: strings(&["localhost"]),
+            blocked_cidrs: strings(&[
+                "0.0.0.0/8",
+                "10.0.0.0/8",
+                "127.0.0.0/8",
+                "169.254.0.0/16",
+                "172.16.0.0/12",
+                "192.168.0.0/16",
+                "::1/128",
+                "fc00::/7",
+                "fe80::/10",
+            ]),
             blocked_targets: strings(&[
                 "http://localhost",
                 "https://localhost",
@@ -402,6 +443,8 @@ fn default_config() -> Config {
             ]),
         },
         console: ConsoleConfig {
+            default_command_policy: "deny".to_string(),
+            allow_path_resolution: true,
             allowed_commands: strings(&["cargo", "git", "rg", "ls", "pwd", "cat", "echo"]),
             blocked_commands: strings(&["rm", "sudo", "su", "sh", "bash"]),
             blocked_arguments: strings(&["-rf", "--no-preserve-root", "/", "/etc", "/root", "..", "~"]),
@@ -417,6 +460,9 @@ fn command_rules() -> Vec<ConsoleCommandRule> {
     vec![
         ConsoleCommandRule {
             name: "git".to_string(),
+            mode: "allow".to_string(),
+            risk: None,
+            allowed_paths: Vec::new(),
             allowed_subcommands: strings(&["status", "diff", "log", "show", "branch"]),
             blocked_subcommands: strings(&["push", "credential", "remote"]),
             ask_subcommands: strings(&["add", "commit"]),
@@ -425,6 +471,9 @@ fn command_rules() -> Vec<ConsoleCommandRule> {
         },
         ConsoleCommandRule {
             name: "cargo".to_string(),
+            mode: "allow".to_string(),
+            risk: None,
+            allowed_paths: Vec::new(),
             allowed_subcommands: strings(&["build", "check", "fmt", "test", "clippy", "nextest"]),
             blocked_subcommands: strings(&["publish", "install", "login", "owner"]),
             ask_subcommands: strings(&["run"]),

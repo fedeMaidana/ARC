@@ -1,6 +1,11 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use std::net::IpAddr;
+
+use ipnet::IpNet;
 use url::Url;
+
+use crate::config::HttpConfig;
 
 // ─── < Structs > ────────────────────────────────────────────────────
 
@@ -16,6 +21,33 @@ pub struct HttpTarget {
 
 pub fn is_valid_http_url(resource: &str) -> bool {
     parse(resource).is_some()
+}
+
+pub fn is_blocked_by_config(resource: &str, config: &HttpConfig) -> bool {
+    let Some(target) = parse(resource) else {
+        return false;
+    };
+
+    if !config.is_allowed_scheme(&target.scheme) {
+        return true;
+    }
+
+    if config.is_blocked_host(&target.host) {
+        return true;
+    }
+
+    if is_blocked_ip_target(&target, config) {
+        return true;
+    }
+
+    if is_blocked_by_cidr(&target, config) {
+        return true;
+    }
+
+    config
+        .blocked_targets
+        .iter()
+        .any(|blocked_target| matches_blocked_target(resource, blocked_target))
 }
 
 pub fn matches_blocked_target(resource: &str, blocked_target: &str) -> bool {
@@ -86,9 +118,70 @@ impl HttpTarget {
     fn effective_port(&self) -> Option<u16> {
         self.port.or_else(|| default_port_for_scheme(&self.scheme))
     }
+
+    fn ip_addr(&self) -> Option<IpAddr> {
+        self.host.parse().ok()
+    }
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
+
+fn is_blocked_ip_target(target: &HttpTarget, config: &HttpConfig) -> bool {
+    let Some(ip_addr) = target.ip_addr() else {
+        return false;
+    };
+
+    if config.block_localhost && (ip_addr.is_loopback() || ip_addr.is_unspecified()) {
+        return true;
+    }
+
+    if config.block_private_networks && is_private_ip(ip_addr) {
+        return true;
+    }
+
+    if config.block_link_local && is_link_local_ip(ip_addr) {
+        return true;
+    }
+
+    if config.block_metadata_services && is_metadata_service_ip(ip_addr) {
+        return true;
+    }
+
+    false
+}
+
+fn is_blocked_by_cidr(target: &HttpTarget, config: &HttpConfig) -> bool {
+    let Some(ip_addr) = target.ip_addr() else {
+        return false;
+    };
+
+    config
+        .blocked_cidrs
+        .iter()
+        .filter_map(|cidr| cidr.parse::<IpNet>().ok())
+        .any(|network| network.contains(&ip_addr))
+}
+
+fn is_private_ip(ip_addr: IpAddr) -> bool {
+    match ip_addr {
+        IpAddr::V4(ipv4) => ipv4.is_private(),
+        IpAddr::V6(ipv6) => ipv6.is_unique_local(),
+    }
+}
+
+fn is_link_local_ip(ip_addr: IpAddr) -> bool {
+    match ip_addr {
+        IpAddr::V4(ipv4) => ipv4.is_link_local(),
+        IpAddr::V6(ipv6) => ipv6.is_unicast_link_local(),
+    }
+}
+
+fn is_metadata_service_ip(ip_addr: IpAddr) -> bool {
+    match ip_addr {
+        IpAddr::V4(ipv4) => ipv4.octets() == [169, 254, 169, 254],
+        IpAddr::V6(_) => false,
+    }
+}
 
 fn has_explicit_non_empty_authority(resource: &str) -> bool {
     let Some(scheme_end) = resource.find(':') else {

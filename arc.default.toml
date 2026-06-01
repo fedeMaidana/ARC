@@ -1,3 +1,8 @@
+config_version = 1
+
+[policy]
+  default_action = "deny"
+
 [actions]
   allowed = [
     "list_files",
@@ -21,7 +26,7 @@
   ask = []
 
 [resources]
-  protected = [
+  protected_names = [
     ".env",
     "id_rsa",
     "secrets.txt"
@@ -34,6 +39,31 @@
   ]
 
 [http]
+  allowed_schemes = [
+    "https"
+  ]
+
+  block_localhost = true
+  block_private_networks = true
+  block_link_local = true
+  block_metadata_services = true
+
+  blocked_hosts = [
+    "localhost"
+  ]
+
+  blocked_cidrs = [
+    "0.0.0.0/8",
+    "10.0.0.0/8",
+    "127.0.0.0/8",
+    "169.254.0.0/16",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "::1/128",
+    "fc00::/7",
+    "fe80::/10"
+  ]
+
   blocked_targets = [
     "http://localhost",
     "https://localhost",
@@ -46,6 +76,9 @@
   ]
 
 [console]
+  default_command_policy = "deny"
+  allow_path_resolution = true
+
   allowed_commands = [
     "cargo",
     "git",
@@ -95,8 +128,9 @@
 
   ask_commands = []
 
-  [[console.command_rules]]
+  [[console.commands]]
     name = "git"
+    mode = "allow"
     allowed_subcommands = [
       "status",
       "diff",
@@ -119,8 +153,9 @@
     ]
     ask_arguments = []
 
-  [[console.command_rules]]
+  [[console.commands]]
     name = "cargo"
+    mode = "allow"
     allowed_subcommands = [
       "build",
       "check",
@@ -142,6 +177,11 @@
     ask_arguments = [
       "--release"
     ]
+
+  [[console.commands]]
+    name = "rm"
+    mode = "deny"
+    risk = "critical"
 
 [audit]
   enabled = true

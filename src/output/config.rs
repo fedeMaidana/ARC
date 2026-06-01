@@ -37,7 +37,11 @@ pub fn print_config_path_missing(default_path: &Path) {
 pub fn print_config(config: &Config, path: &Path) {
     println!("{}", ui::section("Config"));
     println!("  {} {}", ui::dim("path:"), path.display());
+    println!("  {} {}", ui::dim("version:"), config.config_version);
     println!();
+
+    println!("{}", ui::section("Policy"));
+    println!("  {} {}", ui::bold("default action"), config.policy.default_action);
 
     println!("{}", ui::section("Actions"));
     print_list("allowed", &config.actions.allowed);
@@ -50,9 +54,18 @@ pub fn print_config(config: &Config, path: &Path) {
     print_list("blocked path prefixes", &config.resources.blocked_path_prefixes);
 
     println!("{}", ui::section("HTTP"));
-    print_list("blocked targets", &config.http.blocked_targets);
+    print_list("allowed schemes", &config.http.allowed_schemes);
+    println!("  {} {}", ui::bold("block localhost"), config.http.block_localhost);
+    println!("  {} {}", ui::bold("block private networks"), config.http.block_private_networks);
+    println!("  {} {}", ui::bold("block link local"), config.http.block_link_local);
+    println!("  {} {}", ui::bold("block metadata services"), config.http.block_metadata_services);
+    print_list("blocked hosts", &config.http.blocked_hosts);
+    print_list("blocked CIDRs", &config.http.blocked_cidrs);
+    print_list("legacy blocked targets", &config.http.blocked_targets);
 
     println!("{}", ui::section("Console"));
+    println!("  {} {}", ui::bold("default command policy"), config.console.default_command_policy);
+    println!("  {} {}", ui::bold("allow path resolution"), config.console.allow_path_resolution);
     print_list("allowed commands", &config.console.allowed_commands);
     print_list("blocked commands", &config.console.blocked_commands);
     print_list("blocked arguments", &config.console.blocked_arguments);
@@ -86,6 +99,15 @@ fn print_console_command_rules(config: &Config) {
 
     for rule in &config.console.command_rules {
         println!("    - {}", ui::bold(&rule.name));
+        println!("      mode: {}", rule.mode);
+
+        if let Some(risk) = &rule.risk {
+            println!("      risk: {risk}");
+        }
+
+        if !rule.allowed_paths.is_empty() {
+            println!("      allowed paths: {}", rule.allowed_paths.join(", "));
+        }
 
         if !rule.allowed_subcommands.is_empty() {
             println!("      allowed subcommands: {}", rule.allowed_subcommands.join(", "));

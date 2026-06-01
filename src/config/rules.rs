@@ -40,19 +40,37 @@ impl ResourcesConfig {
 
 impl HttpConfig {
     pub fn is_blocked_target(&self, resource: &str) -> bool {
-        self.blocked_targets
-            .iter()
-            .any(|blocked_target| http_target::matches_blocked_target(resource, blocked_target))
+        http_target::is_blocked_by_config(resource, self)
+    }
+
+    pub fn is_allowed_scheme(&self, scheme: &str) -> bool {
+        self.allowed_schemes.iter().any(|allowed_scheme| allowed_scheme.eq_ignore_ascii_case(scheme))
+    }
+
+    pub fn is_blocked_host(&self, host: &str) -> bool {
+        self.blocked_hosts.iter().any(|blocked_host| blocked_host.eq_ignore_ascii_case(host))
     }
 }
 
 impl ConsoleConfig {
     pub fn is_allowed_command(&self, command_name: &str) -> bool {
-        self.allowed_commands.iter().any(|command| command == command_name)
+        if self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Deny) {
+            return false;
+        }
+
+        if self.allowed_commands.iter().any(|command| command == command_name) {
+            return true;
+        }
+
+        self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Allow)
     }
 
     pub fn is_blocked_command(&self, command_name: &str) -> bool {
-        self.blocked_commands.iter().any(|command| command == command_name)
+        if self.blocked_commands.iter().any(|command| command == command_name) {
+            return true;
+        }
+
+        self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Deny)
     }
 
     pub fn is_blocked_argument(&self, argument: &str) -> bool {
@@ -77,7 +95,19 @@ impl ConsoleConfig {
 }
 
 impl ConsoleCommandRule {
+    pub fn policy(&self) -> ConsoleCommandPolicy {
+        match self.mode.as_str() {
+            "deny" | "block" | "blocked" => ConsoleCommandPolicy::Deny,
+            "ask" => ConsoleCommandPolicy::Ask,
+            _ => ConsoleCommandPolicy::Allow,
+        }
+    }
+
     pub fn subcommand_policy(&self, subcommand: Option<&str>) -> ConsoleSubcommandPolicy {
+        if self.policy() == ConsoleCommandPolicy::Deny {
+            return ConsoleSubcommandPolicy::Blocked;
+        }
+
         if let Some(subcommand) = subcommand {
             if self.is_blocked_subcommand(subcommand) {
                 return ConsoleSubcommandPolicy::Blocked;
@@ -123,6 +153,13 @@ impl ConsoleCommandRule {
 }
 
 // ─── < Enums > ──────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConsoleCommandPolicy {
+    Allow,
+    Ask,
+    Deny,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConsoleSubcommandPolicy {
