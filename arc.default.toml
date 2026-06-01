@@ -1,0 +1,100 @@
+[actions]
+  allowed = [
+    "list_files",
+    "read_file",
+    "http_get",
+    "run"
+  ]
+
+  blocked = [
+    "delete_file",
+    "write_file",
+    "run_shell"
+  ]
+
+  need_resource = [
+    "read_file",
+    "http_get",
+    "run"
+  ]
+
+  ask = []
+
+[resources]
+  protected = [
+    ".env",
+    "id_rsa",
+    "secrets.txt"
+  ]
+
+  blocked_path_prefixes = [
+    "/etc/",
+    "/root/",
+    "../"
+  ]
+
+[http]
+  blocked_targets = [
+    "http://localhost",
+    "https://localhost",
+    "http://127.0.0.1",
+    "https://127.0.0.1"
+  ]
+
+[console]
+  allowed_commands = [
+    "cargo",
+    "git",
+    "rg",
+    "ls",
+    "pwd",
+    "cat",
+    "echo",
+    "whoami",
+    "date"
+  ]
+
+  blocked_commands = [
+    "rm",
+    "sudo",
+    "su",
+    "sh",
+    "bash",
+    "zsh",
+    "fish",
+    "chmod",
+    "chown",
+    "curl",
+    "wget",
+    "ssh",
+    "scp",
+    "nc",
+    "ncat",
+    "dd",
+    "mkfs",
+    "mount",
+    "umount",
+    "systemctl",
+    "kill",
+    "pkill"
+  ]
+
+  blocked_arguments = [
+    "-rf",
+    "--no-preserve-root",
+    "/",
+    "/etc",
+    "/root",
+    "..",
+    "~"
+  ]
+
+  ask_commands = []
+
+[audit]
+  enabled = true
+  path = "~/.local/share/arc/audit.log"
+
+[execution]
+  timeout_seconds = 10
+  max_output_bytes = 100000
