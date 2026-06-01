@@ -1,0 +1,113 @@
+// ─── < Imports > ────────────────────────────────────────────────────
+
+use anyhow::{Context, Result};
+
+use crate::cli::CliCommand;
+use crate::config;
+use crate::executor;
+use crate::json_api;
+use crate::output;
+use crate::policy;
+use crate::request::Request;
+
+use super::approval;
+use super::audit;
+use super::json;
+
+// ─── < Public Functions > ───────────────────────────────────────────
+
+pub fn handle(command: CliCommand) -> Result<i32> {
+    match command {
+        CliCommand::Init => handle_init_command(),
+        CliCommand::ConfigPath => handle_config_path_command(),
+        CliCommand::ConfigShow => handle_config_show_command(),
+        CliCommand::ConfigHelp => handle_config_help_command(),
+        CliCommand::DecideJson => handle_decide_json_command(),
+        CliCommand::PolicyRequest(request) => handle_policy_request(request),
+        CliCommand::Help => handle_help_command(),
+    }
+}
+
+// ─── < Command Handlers > ───────────────────────────────────────────
+
+fn handle_init_command() -> Result<i32> {
+    let result = config::init_default_config().context("could not initialize ARC config")?;
+
+    output::print_config_init_result(&result);
+
+    Ok(0)
+}
+
+fn handle_config_path_command() -> Result<i32> {
+    if let Some(path) = config::resolve_config_path() {
+        output::print_config_path(&path);
+
+        return Ok(0);
+    }
+
+    let default_path = config::default_user_config_path().context("could not resolve default config path")?;
+
+    output::print_config_path_missing(&default_path);
+
+    Ok(1)
+}
+
+fn handle_config_show_command() -> Result<i32> {
+    let (loaded_config, path) = config::load_from_default_locations().context("could not load ARC config")?;
+
+    output::print_config(&loaded_config, &path);
+
+    Ok(0)
+}
+
+fn handle_config_help_command() -> Result<i32> {
+    output::print_config_usage();
+
+    Ok(2)
+}
+
+fn handle_decide_json_command() -> Result<i32> {
+    let request = json::read_request_from_stdin()?;
+    let (loaded_config, _path) = config::load_from_default_locations().context("could not load ARC config")?;
+
+    audit::prepare(&loaded_config.audit)?;
+
+    let decision = policy::decide(&request, &loaded_config);
+    let execution_report = executor::execute(&request, &decision, &loaded_config.execution);
+
+    audit::record("json_api", &loaded_config.audit, &request, &decision, &execution_report)?;
+
+    let response = json_api::decision_response_from_parts(&request, &decision, &execution_report);
+
+    json::print_response(&response)?;
+
+    Ok(execution_report.exit_code())
+}
+
+fn handle_policy_request(request: Request) -> Result<i32> {
+    let (loaded_config, _path) = config::load_from_default_locations().context("could not load ARC config")?;
+
+    audit::prepare(&loaded_config.audit)?;
+
+    let decision = policy::decide(&request, &loaded_config);
+
+    output::print_decision(&request, &decision);
+
+    let execution_report = if decision.should_ask() && !request.is_check_mode() {
+        approval::ask_and_maybe_execute(&request, &loaded_config.execution)?
+    } else {
+        executor::execute(&request, &decision, &loaded_config.execution)
+    };
+
+    audit::record("cli", &loaded_config.audit, &request, &decision, &execution_report)?;
+
+    output::print_execution_report(&execution_report);
+
+    Ok(execution_report.exit_code())
+}
+
+fn handle_help_command() -> Result<i32> {
+    output::print_usage();
+
+    Ok(2)
+}
