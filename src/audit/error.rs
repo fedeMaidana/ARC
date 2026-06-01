@@ -28,6 +28,13 @@ pub enum AuditError {
         source: std::io::Error,
     },
 
+    #[error("failed to restrict audit log permissions '{path}'")]
+    SetPermissions {
+        path: String,
+        #[source]
+        source: std::io::Error,
+    },
+
     #[error("failed to serialize audit event")]
     Serialize {
         #[source]

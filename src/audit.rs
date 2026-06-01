@@ -3,6 +3,7 @@
 mod error;
 mod event;
 mod path;
+mod sanitizer;
 mod writer;
 
 // ─── < Public Exports > ─────────────────────────────────────────────

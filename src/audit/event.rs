@@ -8,6 +8,8 @@ use crate::decision::Decision;
 use crate::executor::ExecutionReport;
 use crate::request::Request;
 
+use super::sanitizer::sanitize_field;
+
 // ─── < Structs > ────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]
@@ -63,9 +65,9 @@ impl AuditEvent {
     pub fn from_parts(source: impl Into<String>, request: &Request, decision: &Decision, execution_report: &ExecutionReport) -> Self {
         Self {
             timestamp_unix_seconds: current_timestamp_unix_seconds(),
-            source: source.into(),
+            source: sanitize_field(&source.into()),
             mode: request_mode_text(request).to_string(),
-            action: request.action.clone(),
+            action: sanitize_field(&request.action),
             resource: audit_resource(request),
             decision: decision.status.as_text().to_string(),
             reason: decision.reason.as_text().to_string(),
@@ -87,21 +89,21 @@ impl AuditExecution {
             ExecutionReport::NoExecutionNeeded => Self::NoExecutionNeeded,
             ExecutionReport::MissingCommand => Self::MissingCommand,
             ExecutionReport::CommandFinished(report) => Self::CommandFinished {
-                command_line: report.command_line.clone(),
-                status: report.status.clone(),
+                command_line: sanitize_field(&report.command_line),
+                status: sanitize_field(&report.status),
                 success: report.success,
                 stdout_truncated: report.stdout_truncated,
                 stderr_truncated: report.stderr_truncated,
             },
             ExecutionReport::CommandTimedOut(report) => Self::CommandTimedOut {
-                command_line: report.command_line.clone(),
+                command_line: sanitize_field(&report.command_line),
                 timeout_seconds: report.timeout_seconds,
                 stdout_truncated: report.stdout_truncated,
                 stderr_truncated: report.stderr_truncated,
             },
             ExecutionReport::CommandFailed(error) => Self::CommandFailed {
-                command_line: error.command_line.clone(),
-                details: error.details.clone(),
+                command_line: sanitize_field(&error.command_line),
+                details: sanitize_field(&error.details),
             },
         }
     }
@@ -119,7 +121,7 @@ fn request_mode_text(request: &Request) -> &'static str {
 
 fn audit_resource(request: &Request) -> Option<String> {
     if request.has_resource() {
-        Some(request.resource.clone())
+        Some(sanitize_field(&request.resource))
     } else {
         None
     }

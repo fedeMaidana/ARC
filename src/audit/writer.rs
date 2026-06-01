@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use std::fs::{self, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
@@ -20,14 +20,9 @@ pub fn ensure_audit_log_is_writable(config: &AuditConfig) -> Result<(), AuditErr
 
     ensure_parent_dir_exists(&path)?;
 
-    OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-        .map_err(|source| AuditError::Open {
-            path: path.display().to_string(),
-            source,
-        })?;
+    let file = open_audit_log(&path)?;
+
+    restrict_audit_log_permissions(&file, &path)?;
 
     Ok(())
 }
@@ -43,14 +38,9 @@ pub fn record_event(config: &AuditConfig, event: &AuditEvent) -> Result<(), Audi
 
     let serialized_event = serde_json::to_string(event).map_err(|source| AuditError::Serialize { source })?;
 
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-        .map_err(|source| AuditError::Open {
-            path: path.display().to_string(),
-            source,
-        })?;
+    let mut file = open_audit_log(&path)?;
+
+    restrict_audit_log_permissions(&file, &path)?;
 
     writeln!(file, "{serialized_event}").map_err(|source| AuditError::Write {
         path: path.display().to_string(),
@@ -71,4 +61,40 @@ fn ensure_parent_dir_exists(path: &Path) -> Result<(), AuditError> {
         path: parent_dir.display().to_string(),
         source,
     })
+}
+
+fn open_audit_log(path: &Path) -> Result<File, AuditError> {
+    OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|source| AuditError::Open {
+            path: path.display().to_string(),
+            source,
+        })
+}
+
+#[cfg(unix)]
+fn restrict_audit_log_permissions(file: &File, path: &Path) -> Result<(), AuditError> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut permissions = file
+        .metadata()
+        .map_err(|source| AuditError::SetPermissions {
+            path: path.display().to_string(),
+            source,
+        })?
+        .permissions();
+
+    permissions.set_mode(0o600);
+
+    file.set_permissions(permissions).map_err(|source| AuditError::SetPermissions {
+        path: path.display().to_string(),
+        source,
+    })
+}
+
+#[cfg(not(unix))]
+fn restrict_audit_log_permissions(_file: &File, _path: &Path) -> Result<(), AuditError> {
+    Ok(())
 }
