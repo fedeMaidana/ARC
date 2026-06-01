@@ -25,7 +25,7 @@ fn audit_event_contains_decision_data() {
     assert_eq!(event.action, "run");
     assert_eq!(event.resource, Some("ls -la".to_string()));
     assert_eq!(event.decision, "allow");
-    assert_eq!(event.reason, "action is allowed");
+    assert_eq!(event.reason, "request matches an allowed policy");
     assert_eq!(event.risk, "low");
     assert!(!event.executed);
     assert_eq!(event.exit_code, 0);
@@ -133,7 +133,7 @@ fn record_event_writes_json_line() {
     assert_eq!(json["mode"], "check");
     assert_eq!(json["action"], "run");
     assert_eq!(json["decision"], "allow");
-    assert_eq!(json["reason"], "action is allowed");
+    assert_eq!(json["reason"], "request matches an allowed policy");
     assert_eq!(json["risk"], "low");
     assert_eq!(json["source"], "test");
 

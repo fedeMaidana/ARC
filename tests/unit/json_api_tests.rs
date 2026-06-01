@@ -70,7 +70,7 @@ fn builds_json_decision_response() {
     assert_eq!(response.request.action, "run");
     assert_eq!(response.request.resource, Some("echo hola".to_string()));
     assert_eq!(response.decision.status, "ask");
-    assert_eq!(response.decision.reason, "console command requires user approval");
+    assert_eq!(response.decision.reason, "command requires manual approval");
     assert_eq!(response.decision.reason_code, "console_command_requires_approval");
     assert_eq!(response.decision.risk, "low");
     assert_eq!(response.execution.kind, "check_mode");

@@ -47,16 +47,28 @@ fn decision_can_override_risk_level() {
 }
 
 #[test]
-fn decision_reason_has_stable_text() {
-    assert_eq!(DecisionReason::ConsoleCommandBlocked.as_text(), "console command is blocked");
+fn decision_reason_has_human_readable_text() {
+    assert_eq!(DecisionReason::ActionAllowed.as_text(), "request matches an allowed policy");
 
-    assert_eq!(DecisionReason::ResourceRequired.as_text(), "resource is required");
+    assert_eq!(DecisionReason::ResourceRequired.as_text(), "action requires a resource");
 
-    assert_eq!(DecisionReason::ConsoleCommandRequiresApproval.as_text(), "console command requires user approval");
+    assert_eq!(DecisionReason::ConsoleCommandBlocked.as_text(), "command is explicitly blocked by console policy");
 
-    assert_eq!(DecisionReason::ConsoleSubcommandNotAllowed.as_text(), "console subcommand is not allowed");
+    assert_eq!(DecisionReason::ConsoleCommandRequiresApproval.as_text(), "command requires manual approval");
 
-    assert_eq!(DecisionReason::ConsoleArgumentRequiresApproval.as_text(), "console argument requires user approval");
+    assert_eq!(DecisionReason::ConsoleSubcommandNotAllowed.as_text(), "subcommand is not allowed for this command");
+
+    assert_eq!(DecisionReason::ConsoleArgumentRequiresApproval.as_text(), "argument requires manual approval");
+}
+
+#[test]
+fn decision_reason_has_stable_codes() {
+    assert_eq!(DecisionReason::ActionAllowed.as_code(), "action_allowed");
+    assert_eq!(DecisionReason::ConsoleCommandBlocked.as_code(), "console_command_blocked");
+
+    assert_eq!(DecisionReason::ConsoleSubcommandRequiresApproval.as_code(), "console_subcommand_requires_approval");
+
+    assert_eq!(DecisionReason::ConsoleArgumentRequiresApproval.as_code(), "console_argument_requires_approval");
 }
 
 #[test]

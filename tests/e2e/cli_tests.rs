@@ -139,7 +139,7 @@ fn check_blocked_command_returns_non_zero_exit_code() {
 
     assert!(stdout.contains("Decision"));
     assert!(stdout.contains("deny"));
-    assert!(stdout.contains("console command is blocked"));
+    assert!(stdout.contains("command is explicitly blocked by console policy"));
     assert!(stdout.contains("Check mode"));
 }
 
@@ -154,7 +154,7 @@ fn check_blocked_command_subcommand_returns_non_zero_exit_code() {
 
     assert!(stdout.contains("Decision"));
     assert!(stdout.contains("deny"));
-    assert!(stdout.contains("console subcommand is blocked"));
+    assert!(stdout.contains("subcommand is explicitly blocked by command policy"));
 }
 
 #[test]
@@ -168,7 +168,7 @@ fn check_ask_command_subcommand_returns_success_but_marks_ask() {
 
     assert!(stdout.contains("Decision"));
     assert!(stdout.contains("ask"));
-    assert!(stdout.contains("console subcommand requires user approval"));
+    assert!(stdout.contains("subcommand requires manual approval"));
     assert!(stdout.contains("Check mode"));
 }
 
@@ -193,7 +193,7 @@ fn decide_json_allowed_command_returns_machine_readable_response() {
     assert_eq!(response["request"]["resource"], "echo hello");
 
     assert_eq!(response["decision"]["status"], "allow");
-    assert_eq!(response["decision"]["reason"], "action is allowed");
+    assert_eq!(response["decision"]["reason"], "request matches an allowed policy");
     assert_eq!(response["decision"]["reason_code"], "action_allowed");
 
     assert_eq!(response["execution"]["kind"], "check_mode");
@@ -213,8 +213,13 @@ fn decide_json_blocked_command_returns_non_zero_machine_readable_response() {
     let response = json_stdout(&output);
 
     assert_eq!(response["ok"], true);
+    assert_eq!(response["api_version"], "1");
+    assert_eq!(response["kind"], "decision");
+
     assert_eq!(response["decision"]["status"], "deny");
-    assert_eq!(response["decision"]["reason"], "console command is blocked");
+    assert_eq!(response["decision"]["reason"], "command is explicitly blocked by console policy");
+    assert_eq!(response["decision"]["reason_code"], "console_command_blocked");
+
     assert_eq!(response["execution"]["kind"], "check_mode");
     assert_eq!(response["execution"]["allowed"], false);
     assert_eq!(response["execution"]["executed"], false);
