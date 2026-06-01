@@ -102,3 +102,6 @@
 [execution]
   timeout_seconds = 10
   max_output_bytes = 100000
+  inherit_environment = false
+  working_directory = "."
+  environment = []

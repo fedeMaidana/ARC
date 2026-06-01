@@ -65,4 +65,27 @@ pub fn print_config(config: &Config, path: &Path) {
     println!("{}", ui::section("Execution"));
     println!("  {} {}", ui::bold("timeout seconds"), config.execution.timeout_seconds);
     println!("  {} {}", ui::bold("max output bytes"), config.execution.max_output_bytes);
+    println!("  {} {}", ui::bold("inherit environment"), config.execution.inherit_environment);
+    println!("  {} {}", ui::bold("working directory"), config.execution.working_directory.as_deref().unwrap_or("(current process)"));
+
+    print_execution_environment_variables(config);
+}
+
+// ─── < Private Functions > ──────────────────────────────────────────
+
+fn print_execution_environment_variables(config: &Config) {
+    println!("  {}", ui::bold("environment"));
+
+    if config.execution.environment.is_empty() {
+        println!("    {}", ui::dim("none"));
+        println!();
+
+        return;
+    }
+
+    for variable in &config.execution.environment {
+        println!("    - {}={}", variable.name, ui::dim("[hidden]"));
+    }
+
+    println!();
 }

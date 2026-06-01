@@ -65,6 +65,21 @@ pub struct ExecutionConfig {
 
     #[serde(default = "default_max_output_bytes")]
     pub max_output_bytes: usize,
+
+    #[serde(default = "default_inherit_environment")]
+    pub inherit_environment: bool,
+
+    #[serde(default)]
+    pub working_directory: Option<String>,
+
+    #[serde(default)]
+    pub environment: Vec<ExecutionEnvironmentVariable>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ExecutionEnvironmentVariable {
+    pub name: String,
+    pub value: String,
 }
 
 // ─── < Implementations > ────────────────────────────────────────────
@@ -83,6 +98,9 @@ impl Default for ExecutionConfig {
         Self {
             timeout_seconds: default_timeout_seconds(),
             max_output_bytes: default_max_output_bytes(),
+            inherit_environment: default_inherit_environment(),
+            working_directory: None,
+            environment: Vec::new(),
         }
     }
 }
@@ -103,4 +121,8 @@ fn default_timeout_seconds() -> u64 {
 
 fn default_max_output_bytes() -> usize {
     100_000
+}
+
+fn default_inherit_environment() -> bool {
+    false
 }

@@ -36,6 +36,9 @@ pub fn test_config() -> Config {
         execution: ExecutionConfig {
             timeout_seconds: 10,
             max_output_bytes: 100_000,
+            inherit_environment: false,
+            working_directory: None,
+            environment: Vec::new(),
         },
     }
 }

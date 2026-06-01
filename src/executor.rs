@@ -1,7 +1,9 @@
 // ─── < Modules > ────────────────────────────────────────────────────
 
+mod command;
 mod console;
 mod engine;
+mod environment;
 mod model;
 mod output;
 mod process;

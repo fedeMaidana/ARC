@@ -5,6 +5,8 @@ use std::process::{Command, Stdio};
 use crate::config::ExecutionConfig;
 use crate::request::Request;
 
+use super::command::resolve_command_path;
+use super::environment::apply_execution_environment;
 use super::model::{CommandExecutionError, CommandExecutionReport, CommandTimeoutReport, ExecutionReport};
 use super::output::{capture_output, join_output};
 use super::process::{CommandWaitResult, wait_for_child};
@@ -18,11 +20,20 @@ pub fn run(request: &Request, execution_config: &ExecutionConfig) -> ExecutionRe
 
     let command_line = request.resource.clone();
 
-    let child_result = Command::new(command_name)
-        .args(request.command_args())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn();
+    let command_path = match resolve_command_path(command_name) {
+        Ok(command_path) => command_path,
+        Err(details) => {
+            return ExecutionReport::CommandFailed(CommandExecutionError { command_line, details });
+        }
+    };
+
+    let mut command = Command::new(command_path);
+
+    command.args(request.command_args()).stdout(Stdio::piped()).stderr(Stdio::piped());
+
+    apply_execution_environment(&mut command, execution_config);
+
+    let child_result = command.spawn();
 
     let mut child = match child_result {
         Ok(child) => child,
