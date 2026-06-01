@@ -62,9 +62,7 @@ impl CliCommand {
             "path" => Ok(Self::ConfigPath),
             "show" => Ok(Self::ConfigShow),
             "help" | "-h" | "--help" => Ok(Self::ConfigHelp),
-            command => Err(CliError::UnknownConfigCommand {
-                command: command.to_string(),
-            }),
+            command => Err(CliError::UnknownConfigCommand { command: command.to_string() }),
         }
     }
 
@@ -75,9 +73,7 @@ impl CliCommand {
 
         match args[2].as_str() {
             "--json" => Ok(Self::DecideJson),
-            option => Err(CliError::UnknownDecideOption {
-                option: option.to_string(),
-            }),
+            option => Err(CliError::UnknownDecideOption { option: option.to_string() }),
         }
     }
 

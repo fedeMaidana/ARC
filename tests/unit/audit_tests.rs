@@ -159,11 +159,7 @@ fn record_event_restricts_audit_log_permissions() {
 
     audit::record_event(&config, &event).expect("audit event should be written");
 
-    let permissions = fs::metadata(&audit_path)
-        .expect("audit log metadata should be readable")
-        .permissions()
-        .mode()
-        & 0o777;
+    let permissions = fs::metadata(&audit_path).expect("audit log metadata should be readable").permissions().mode() & 0o777;
 
     assert_eq!(permissions, 0o600);
 

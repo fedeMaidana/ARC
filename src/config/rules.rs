@@ -16,9 +16,7 @@ impl ActionsConfig {
     }
 
     pub fn action_needs_resource(&self, action: &str) -> bool {
-        self.need_resource
-            .iter()
-            .any(|action_that_needs_resource| action_that_needs_resource == action)
+        self.need_resource.iter().any(|action_that_needs_resource| action_that_needs_resource == action)
     }
 
     pub fn action_should_ask(&self, action: &str) -> bool {
@@ -70,13 +68,11 @@ impl ConsoleConfig {
     }
 
     pub fn is_blocked_command_argument(&self, command_name: &str, argument: &str) -> bool {
-        self.command_rule(command_name)
-            .is_some_and(|rule| rule.is_blocked_argument(argument))
+        self.command_rule(command_name).is_some_and(|rule| rule.is_blocked_argument(argument))
     }
 
     pub fn command_argument_should_ask(&self, command_name: &str, argument: &str) -> bool {
-        self.command_rule(command_name)
-            .is_some_and(|rule| rule.argument_should_ask(argument))
+        self.command_rule(command_name).is_some_and(|rule| rule.argument_should_ask(argument))
     }
 }
 

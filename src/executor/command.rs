@@ -32,9 +32,7 @@ fn command_contains_path_separator(command_name: &str) -> bool {
 }
 
 fn search_path_entries() -> Vec<PathBuf> {
-    env::var_os("PATH")
-        .map(|paths| env::split_paths(&paths).collect())
-        .unwrap_or_default()
+    env::var_os("PATH").map(|paths| env::split_paths(&paths).collect()).unwrap_or_default()
 }
 
 #[cfg(unix)]

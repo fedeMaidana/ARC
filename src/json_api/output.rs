@@ -102,11 +102,7 @@ fn request_mode_text(request: &Request) -> &'static str {
 }
 
 fn request_resource(request: &Request) -> Option<String> {
-    if request.has_resource() {
-        Some(request.resource.clone())
-    } else {
-        None
-    }
+    if request.has_resource() { Some(request.resource.clone()) } else { None }
 }
 
 fn execution_kind(execution_report: &ExecutionReport) -> &'static str {

@@ -59,10 +59,7 @@ pub fn parse(resource: &str) -> Option<HttpTarget> {
 
 impl HttpTarget {
     fn matches(&self, blocked_target: &Self) -> bool {
-        self.scheme == blocked_target.scheme
-            && self.host == blocked_target.host
-            && self.matches_port(blocked_target)
-            && self.matches_path(blocked_target)
+        self.scheme == blocked_target.scheme && self.host == blocked_target.host && self.matches_port(blocked_target) && self.matches_path(blocked_target)
     }
 
     fn matches_port(&self, blocked_target: &Self) -> bool {

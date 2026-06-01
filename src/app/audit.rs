@@ -17,13 +17,7 @@ pub fn prepare(config: &AuditConfig) -> Result<()> {
     audit_log::ensure_audit_log_is_writable(config).context("could not prepare audit log")
 }
 
-pub fn record(
-    default_source: &str,
-    audit_config: &AuditConfig,
-    request: &Request,
-    decision: &Decision,
-    execution_report: &ExecutionReport,
-) -> Result<()> {
+pub fn record(default_source: &str, audit_config: &AuditConfig, request: &Request, decision: &Decision, execution_report: &ExecutionReport) -> Result<()> {
     let source = source_or(default_source);
     let event = AuditEvent::from_parts(source, request, decision, execution_report);
 

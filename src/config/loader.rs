@@ -16,10 +16,7 @@ pub fn load(path: impl AsRef<Path>) -> Result<Config, ConfigError> {
         source,
     })?;
 
-    toml::from_str(&content).map_err(|source| ConfigError::Parse {
-        path: path_display,
-        source,
-    })
+    toml::from_str(&content).map_err(|source| ConfigError::Parse { path: path_display, source })
 }
 
 pub fn load_from_default_locations() -> Result<(Config, PathBuf), ConfigError> {

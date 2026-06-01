@@ -42,17 +42,11 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
         .iter()
         .any(|argument| config.console.command_argument_should_ask(command_name, argument))
     {
-        return Some(Decision::ask_with_risk(
-            DecisionReason::ConsoleArgumentRequiresApproval,
-            risk::for_allowed_console_command(command_name),
-        ));
+        return Some(Decision::ask_with_risk(DecisionReason::ConsoleArgumentRequiresApproval, risk::for_allowed_console_command(command_name)));
     }
 
     if config.console.command_should_ask(command_name) {
-        return Some(Decision::ask_with_risk(
-            DecisionReason::ConsoleCommandRequiresApproval,
-            risk::for_allowed_console_command(command_name),
-        ));
+        return Some(Decision::ask_with_risk(DecisionReason::ConsoleCommandRequiresApproval, risk::for_allowed_console_command(command_name)));
     }
 
     None
@@ -65,10 +59,9 @@ fn decide_command_rule(command_name: &str, request: &Request, config: &Config) -
 
     match command_rule.subcommand_policy(primary_subcommand(request)) {
         ConsoleSubcommandPolicy::Allowed => None,
-        ConsoleSubcommandPolicy::Ask => Some(Decision::ask_with_risk(
-            DecisionReason::ConsoleSubcommandRequiresApproval,
-            risk::for_allowed_console_command(command_name),
-        )),
+        ConsoleSubcommandPolicy::Ask => {
+            Some(Decision::ask_with_risk(DecisionReason::ConsoleSubcommandRequiresApproval, risk::for_allowed_console_command(command_name)))
+        }
         ConsoleSubcommandPolicy::Blocked => Some(Decision::deny_with_risk(DecisionReason::ConsoleSubcommandBlocked, RiskLevel::Critical)),
         ConsoleSubcommandPolicy::NotAllowed => Some(Decision::deny_with_risk(DecisionReason::ConsoleSubcommandNotAllowed, RiskLevel::High)),
         ConsoleSubcommandPolicy::Required => Some(Decision::deny_with_risk(DecisionReason::ConsoleSubcommandRequired, RiskLevel::Medium)),
