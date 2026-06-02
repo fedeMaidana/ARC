@@ -11,11 +11,11 @@ pub enum CliError {
     #[error("missing action after 'check'")]
     MissingActionAfterCheck,
 
-    #[error("missing config command")]
-    MissingConfigCommand,
+    #[error("missing runtime settings command")]
+    MissingRuntimeSettingsCommand,
 
-    #[error("unknown config command '{command}'")]
-    UnknownConfigCommand { command: String },
+    #[error("unknown runtime settings command '{command}'")]
+    UnknownRuntimeSettingsCommand { command: String },
 
     #[error("missing decide command format")]
     MissingDecideFormat,
@@ -49,16 +49,16 @@ impl CliCommand {
         match args[1].as_str() {
             "help" | "-h" | "--help" => Ok(Self::Help),
             "init" => Ok(Self::Init),
-            "config" => Self::parse_config_command(args),
+            "settings" | "config" => Self::parse_runtime_settings_command(args),
             "decide" => Self::parse_decide_command(args),
             "monitor" | "tui" => Ok(Self::Tui),
             _ => Self::parse_policy_request(args),
         }
     }
 
-    fn parse_config_command(args: &[String]) -> Result<Self, CliError> {
+    fn parse_runtime_settings_command(args: &[String]) -> Result<Self, CliError> {
         if args.len() < 3 {
-            return Err(CliError::MissingConfigCommand);
+            return Err(CliError::MissingRuntimeSettingsCommand);
         }
 
         match args[2].as_str() {
@@ -66,7 +66,7 @@ impl CliCommand {
             "check" => Ok(Self::ConfigCheck),
             "show" => Ok(Self::ConfigShow),
             "help" | "-h" | "--help" => Ok(Self::ConfigHelp),
-            command => Err(CliError::UnknownConfigCommand {
+            command => Err(CliError::UnknownRuntimeSettingsCommand {
                 command: command.to_string(),
             }),
         }

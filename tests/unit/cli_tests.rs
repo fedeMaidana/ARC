@@ -23,7 +23,34 @@ fn parses_init_command() {
 }
 
 #[test]
-fn parses_config_path_command() {
+fn parses_settings_path_command() {
+    let args = vec!["arc".to_string(), "settings".to_string(), "path".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    assert!(matches!(result, Ok(CliCommand::ConfigPath)));
+}
+
+#[test]
+fn parses_settings_check_command() {
+    let args = vec!["arc".to_string(), "settings".to_string(), "check".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    assert!(matches!(result, Ok(CliCommand::ConfigCheck)));
+}
+
+#[test]
+fn parses_settings_show_command() {
+    let args = vec!["arc".to_string(), "settings".to_string(), "show".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    assert!(matches!(result, Ok(CliCommand::ConfigShow)));
+}
+
+#[test]
+fn parses_config_path_compatibility_alias() {
     let args = vec!["arc".to_string(), "config".to_string(), "path".to_string()];
 
     let result = CliCommand::from_args(&args);
@@ -32,7 +59,7 @@ fn parses_config_path_command() {
 }
 
 #[test]
-fn parses_config_check_command() {
+fn parses_config_check_compatibility_alias() {
     let args = vec!["arc".to_string(), "config".to_string(), "check".to_string()];
 
     let result = CliCommand::from_args(&args);
@@ -90,16 +117,39 @@ fn returns_error_when_check_has_no_action() {
 }
 
 #[test]
-fn returns_error_for_unknown_config_command() {
+fn returns_error_when_settings_has_no_subcommand() {
+    let args = vec!["arc".to_string(), "settings".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    assert!(matches!(result, Err(CliError::MissingRuntimeSettingsCommand)));
+}
+
+#[test]
+fn returns_error_for_unknown_settings_command() {
+    let args = vec!["arc".to_string(), "settings".to_string(), "nope".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    match result {
+        Err(CliError::UnknownRuntimeSettingsCommand { command }) => {
+            assert_eq!(command, "nope");
+        }
+        _ => panic!("expected unknown runtime settings command error"),
+    }
+}
+
+#[test]
+fn returns_error_for_unknown_config_alias_command() {
     let args = vec!["arc".to_string(), "config".to_string(), "nope".to_string()];
 
     let result = CliCommand::from_args(&args);
 
     match result {
-        Err(CliError::UnknownConfigCommand { command }) => {
+        Err(CliError::UnknownRuntimeSettingsCommand { command }) => {
             assert_eq!(command, "nope");
         }
-        _ => panic!("expected unknown config command error"),
+        _ => panic!("expected unknown runtime settings command error"),
     }
 }
 

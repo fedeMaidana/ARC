@@ -5,9 +5,9 @@ use super::common::{TestFixture, assert_success, stdout};
 // ─── < Tests > ──────────────────────────────────────────────────────
 
 #[test]
-fn config_show_prints_runtime_config() {
-    let fixture = TestFixture::new("config-show");
-    let output = fixture.run(&["config", "show"]);
+fn settings_show_prints_runtime_config() {
+    let fixture = TestFixture::new("settings-show");
+    let output = fixture.run(&["settings", "show"]);
 
     assert_success(&output);
 
@@ -27,7 +27,33 @@ fn config_show_prints_runtime_config() {
 }
 
 #[test]
-fn config_path_prints_runtime_config_source() {
+fn config_show_still_works_as_compatibility_alias() {
+    let fixture = TestFixture::new("config-show");
+    let output = fixture.run(&["config", "show"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Config"));
+    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+}
+
+#[test]
+fn settings_path_prints_runtime_config_source() {
+    let fixture = TestFixture::new("settings-path");
+    let output = fixture.run(&["settings", "path"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Config source"));
+    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+}
+
+#[test]
+fn config_path_still_works_as_compatibility_alias() {
     let fixture = TestFixture::new("config-path");
     let output = fixture.run(&["config", "path"]);
 
@@ -40,7 +66,20 @@ fn config_path_prints_runtime_config_source() {
 }
 
 #[test]
-fn config_check_prints_success_for_runtime_config() {
+fn settings_check_prints_success_for_runtime_config() {
+    let fixture = TestFixture::new("settings-check-valid");
+    let output = fixture.run(&["settings", "check"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Runtime config is valid"));
+    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+}
+
+#[test]
+fn config_check_still_works_as_compatibility_alias() {
     let fixture = TestFixture::new("config-check-valid");
     let output = fixture.run(&["config", "check"]);
 
@@ -53,9 +92,9 @@ fn config_check_prints_success_for_runtime_config() {
 }
 
 #[test]
-fn config_check_prints_validation_errors_for_invalid_runtime_config() {
-    let fixture = TestFixture::with_env("config-check-invalid", "ARC_POLICY_ENGINE", "magic");
-    let output = fixture.run(&["config", "check"]);
+fn settings_check_prints_validation_errors_for_invalid_runtime_config() {
+    let fixture = TestFixture::with_env("settings-check-invalid", "ARC_POLICY_ENGINE", "magic");
+    let output = fixture.run(&["settings", "check"]);
 
     assert_eq!(output.status.code(), Some(2));
 
