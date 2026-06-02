@@ -3,8 +3,7 @@
 use arc::decision::{DecisionReason, DecisionStatus};
 use arc::policy::{NativePolicyEngine, PolicyEngine, PolicyInput};
 
-#[path = "../common.rs"]
-mod common;
+use crate::common;
 
 // ─── < Tests > ──────────────────────────────────────────────────────
 

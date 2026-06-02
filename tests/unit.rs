@@ -1,3 +1,8 @@
+// ─── < Shared Test Helpers > ────────────────────────────────────────
+
+#[path = "common.rs"]
+mod common;
+
 // ─── < Unit Test Modules > ──────────────────────────────────────────
 
 #[path = "unit/audit_tests.rs"]
@@ -26,6 +31,9 @@ mod policy_engine_tests;
 
 #[path = "unit/policy_tests.rs"]
 mod policy_tests;
+
+#[path = "unit/rego_policy_engine_tests.rs"]
+mod rego_policy_engine_tests;
 
 #[path = "unit/request_tests.rs"]
 mod request_tests;
