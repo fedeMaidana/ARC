@@ -1,7 +1,8 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
 use arc::config::{
-    ActionsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig,
+    ActionsConfig, AgentsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig,
+    ResourcesConfig,
 };
 use arc::decision::{Decision, DecisionReason, DecisionStatus, RiskLevel};
 use arc::request::{Request, RequestMode};
@@ -14,6 +15,7 @@ pub fn default_config() -> Config {
         policy: PolicyConfig {
             default_action: "deny".to_string(),
         },
+        agents: AgentsConfig::default(),
         actions: ActionsConfig {
             allowed: strings(&["list_files", "read_file", "http_get", "run"]),
             blocked: strings(&["delete_file", "write_file", "run_shell"]),

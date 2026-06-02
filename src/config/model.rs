@@ -12,6 +12,9 @@ pub struct Config {
     #[serde(default)]
     pub policy: PolicyConfig,
 
+    #[serde(default)]
+    pub agents: AgentsConfig,
+
     pub actions: ActionsConfig,
     pub resources: ResourcesConfig,
     pub http: HttpConfig,
@@ -28,6 +31,31 @@ pub struct Config {
 pub struct PolicyConfig {
     #[serde(default = "default_policy_action")]
     pub default_action: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AgentsConfig {
+    #[serde(default = "default_allow_unknown_sources")]
+    pub allow_unknown_sources: bool,
+
+    #[serde(default)]
+    pub sources: Vec<AgentSourceConfig>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AgentSourceConfig {
+    pub id: String,
+
+    pub display_name: String,
+
+    #[serde(default = "default_agent_source_enabled")]
+    pub enabled: bool,
+
+    #[serde(default = "default_agent_kind")]
+    pub kind: String,
+
+    #[serde(default)]
+    pub description: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -171,6 +199,15 @@ impl Default for PolicyConfig {
     }
 }
 
+impl Default for AgentsConfig {
+    fn default() -> Self {
+        Self {
+            allow_unknown_sources: default_allow_unknown_sources(),
+            sources: Vec::new(),
+        }
+    }
+}
+
 impl Default for AuditConfig {
     fn default() -> Self {
         Self {
@@ -200,6 +237,18 @@ fn default_config_version() -> u32 {
 
 fn default_policy_action() -> String {
     "deny".to_string()
+}
+
+fn default_allow_unknown_sources() -> bool {
+    true
+}
+
+fn default_agent_source_enabled() -> bool {
+    true
+}
+
+fn default_agent_kind() -> String {
+    "custom".to_string()
 }
 
 fn default_allowed_http_schemes() -> Vec<String> {

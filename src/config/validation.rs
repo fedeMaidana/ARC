@@ -6,7 +6,7 @@ use std::path::Path;
 
 use ipnet::IpNet;
 
-use super::model::{Config, ConsoleCommandRule, ConsoleConfig};
+use super::model::{AgentSourceConfig, AgentsConfig, Config, ConsoleCommandRule, ConsoleConfig};
 
 // ─── < Constants > ──────────────────────────────────────────────────
 
@@ -14,6 +14,7 @@ const SUPPORTED_CONFIG_VERSION: u32 = 1;
 const POLICY_ACTIONS: &[&str] = &["deny", "ask", "allow"];
 const COMMAND_MODES: &[&str] = &["allow", "ask", "deny"];
 const HTTP_SCHEMES: &[&str] = &["http", "https"];
+const AGENT_KINDS: &[&str] = &["local_cli", "local_agent", "custom"];
 
 // ─── < Structs > ────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ pub fn validate(config: &Config) -> Result<(), ConfigValidationError> {
 
     validate_config_version(&mut validator, config);
     validate_policy(&mut validator, config);
+    validate_agents(&mut validator, &config.agents);
     validate_console(&mut validator, &config.console);
     validate_http(&mut validator, config);
 
@@ -122,6 +124,43 @@ fn validate_config_version(validator: &mut ConfigValidator, config: &Config) {
 
 fn validate_policy(validator: &mut ConfigValidator, config: &Config) {
     validate_supported_value(validator, "policy.default_action", &config.policy.default_action, POLICY_ACTIONS);
+}
+
+fn validate_agents(validator: &mut ConfigValidator, agents: &AgentsConfig) {
+    let mut seen_sources = HashSet::new();
+
+    for (index, source) in agents.sources.iter().enumerate() {
+        validate_agent_source(validator, source, index);
+
+        if !seen_sources.insert(source.id.as_str()) {
+            validator.issue(agent_source_field(index, "id"), format!("duplicate agent source id \"{}\"", source.id));
+        }
+    }
+}
+
+fn validate_agent_source(validator: &mut ConfigValidator, source: &AgentSourceConfig, index: usize) {
+    if source.id.trim().is_empty() {
+        validator.issue(agent_source_field(index, "id"), "agent source id cannot be empty");
+    } else if !is_valid_agent_source_id(&source.id) {
+        validator.issue(
+            agent_source_field(index, "id"),
+            format!("invalid agent source id \"{}\"; use lowercase letters, numbers, '.', '_' or '-'", source.id),
+        );
+    }
+
+    if source.display_name.trim().is_empty() {
+        validator.issue(agent_source_field(index, "display_name"), "agent source display name cannot be empty");
+    }
+
+    validate_supported_value(validator, agent_source_field(index, "kind"), &source.kind, AGENT_KINDS);
+
+    if source
+        .description
+        .as_deref()
+        .is_some_and(|description| description.trim().is_empty())
+    {
+        validator.issue(agent_source_field(index, "description"), "agent source description cannot be empty when provided");
+    }
 }
 
 fn validate_console(validator: &mut ConfigValidator, console: &ConsoleConfig) {
@@ -241,6 +280,16 @@ fn is_permissive_mode(mode: &str) -> bool {
 
 fn command_field(rule: &ConsoleCommandRule, suffix: &str) -> String {
     format!("console.commands[{}]{suffix}", rule.name)
+}
+
+fn agent_source_field(index: usize, field: &str) -> String {
+    format!("agents.sources[{index}].{field}")
+}
+
+fn is_valid_agent_source_id(value: &str) -> bool {
+    value
+        .chars()
+        .all(|character| character.is_ascii_lowercase() || character.is_ascii_digit() || matches!(character, '-' | '_' | '.'))
 }
 
 fn looks_like_url_or_path(value: &str) -> bool {

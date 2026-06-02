@@ -68,6 +68,10 @@ pub fn print_config(config: &Config, path: &Path) {
     println!("{}", ui::section("Policy"));
     println!("  {} {}", ui::bold("default action"), config.policy.default_action);
 
+    println!("{}", ui::section("Agents"));
+    println!("  {} {}", ui::bold("allow unknown sources"), config.agents.allow_unknown_sources);
+    print_agent_sources(config);
+
     println!("{}", ui::section("Actions"));
     print_list("allowed", &config.actions.allowed);
     print_list("blocked", &config.actions.blocked);
@@ -111,6 +115,32 @@ pub fn print_config(config: &Config, path: &Path) {
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
+
+fn print_agent_sources(config: &Config) {
+    println!("  {}", ui::bold("sources"));
+
+    if config.agents.sources.is_empty() {
+        println!("    {}", ui::dim("none"));
+        println!();
+
+        return;
+    }
+
+    for source in &config.agents.sources {
+        let enabled = if source.enabled { "enabled" } else { "disabled" };
+
+        println!("    - {}", ui::bold(&source.id));
+        println!("      name: {}", source.display_name);
+        println!("      kind: {}", source.kind);
+        println!("      status: {enabled}");
+
+        if let Some(description) = &source.description {
+            println!("      description: {description}");
+        }
+    }
+
+    println!();
+}
 
 fn print_console_command_rules(config: &Config) {
     println!("  {}", ui::bold("command rules"));

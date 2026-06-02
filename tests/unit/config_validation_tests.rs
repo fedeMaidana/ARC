@@ -1,8 +1,8 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
 use arc::config::{
-    ActionsConfig, AuditConfig, Config, ConfigValidationError, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig,
-    PolicyConfig, ResourcesConfig, validate,
+    ActionsConfig, AgentSourceConfig, AgentsConfig, AuditConfig, Config, ConfigValidationError, ConsoleCommandRule, ConsoleConfig,
+    ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig, validate,
 };
 
 // ─── < Tests > ──────────────────────────────────────────────────────
@@ -10,6 +10,21 @@ use arc::config::{
 #[test]
 fn accepts_valid_config() {
     let config = default_config();
+
+    assert!(validate(&config).is_ok());
+}
+
+#[test]
+fn accepts_custom_agent_source() {
+    let mut config = default_config();
+
+    config.agents.sources.push(agent_source(
+        "claude-code",
+        "Claude Code",
+        true,
+        "local_agent",
+        Some("User-managed Claude Code integration"),
+    ));
 
     assert!(validate(&config).is_ok());
 }
@@ -37,6 +52,43 @@ fn rejects_unsupported_policy_values() {
             "console.default_command_policy: unsupported value \"maybe\"",
         ],
     );
+}
+
+#[test]
+fn rejects_invalid_agent_source_config() {
+    let mut config = default_config();
+
+    config
+        .agents
+        .sources
+        .push(agent_source("Claude Code", "", true, "remote_magic", Some("   ")));
+
+    assert_validation_error(
+        &config,
+        &[
+            "agents.sources[1].id",
+            "invalid agent source id \"Claude Code\"",
+            "agents.sources[1].display_name",
+            "agent source display name cannot be empty",
+            "agents.sources[1].kind",
+            "unsupported value \"remote_magic\"",
+            "expected one of: local_cli, local_agent, custom",
+            "agents.sources[1].description",
+            "agent source description cannot be empty when provided",
+        ],
+    );
+}
+
+#[test]
+fn rejects_duplicate_agent_source_ids() {
+    let mut config = default_config();
+
+    config
+        .agents
+        .sources
+        .push(agent_source("opencode", "Another OpenCode", true, "local_agent", None));
+
+    assert_validation_error(&config, &["agents.sources[1].id", "duplicate agent source id \"opencode\""]);
 }
 
 #[test]
@@ -148,6 +200,16 @@ fn default_config() -> Config {
         policy: PolicyConfig {
             default_action: "deny".to_string(),
         },
+        agents: AgentsConfig {
+            allow_unknown_sources: false,
+            sources: vec![agent_source(
+                "opencode",
+                "OpenCode",
+                true,
+                "local_agent",
+                Some("OpenCode custom bash tool"),
+            )],
+        },
         actions: ActionsConfig {
             allowed: strings(&["run", "http_get"]),
             blocked: strings(&["delete_file"]),
@@ -179,6 +241,16 @@ fn default_config() -> Config {
         },
         audit: AuditConfig::default(),
         execution: ExecutionConfig::default(),
+    }
+}
+
+fn agent_source(id: &str, display_name: &str, enabled: bool, kind: &str, description: Option<&str>) -> AgentSourceConfig {
+    AgentSourceConfig {
+        id: id.to_string(),
+        display_name: display_name.to_string(),
+        enabled,
+        kind: kind.to_string(),
+        description: description.map(ToString::to_string),
     }
 }
 

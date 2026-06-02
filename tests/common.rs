@@ -1,6 +1,8 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use arc::config::{ActionsConfig, AuditConfig, Config, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig};
+use arc::config::{
+    ActionsConfig, AgentsConfig, AuditConfig, Config, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig,
+};
 
 // ─── < Public Helpers > ─────────────────────────────────────────────
 
@@ -14,6 +16,7 @@ pub fn test_config() -> Config {
         policy: PolicyConfig {
             default_action: "deny".to_string(),
         },
+        agents: AgentsConfig::default(),
         actions: ActionsConfig {
             allowed: strings(&["run", "http_get"]),
             blocked: strings(&["delete"]),

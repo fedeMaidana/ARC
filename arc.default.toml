@@ -3,6 +3,32 @@ config_version = 1
 [policy]
   default_action = "deny"
 
+# ─── < Agents > ───────────────────────────────────────────────────────────
+
+[agents]
+  allow_unknown_sources = false
+
+  [[agents.sources]]
+    id = "cli"
+    display_name = "ARC CLI"
+    enabled = true
+    kind = "local_cli"
+    description = "Built-in human command-line usage"
+
+  [[agents.sources]]
+    id = "json_api"
+    display_name = "ARC JSON API"
+    enabled = true
+    kind = "local_cli"
+    description = "Built-in machine-readable JSON interface"
+
+  [[agents.sources]]
+    id = "opencode"
+    display_name = "OpenCode"
+    enabled = true
+    kind = "local_agent"
+    description = "OpenCode custom bash tool routed through ARC"
+
 # ─── < Actions > ────────────────────────────────────────────────────────
 
 [actions]
