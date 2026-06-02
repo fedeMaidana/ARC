@@ -4,7 +4,7 @@ type OpenCodeToolContext = {
   directory: string
 }
 
-type AgentGateDecisionResponse = {
+type ArcDecisionResponse = {
   ok: boolean
   error?: string
   decision?: {
@@ -32,7 +32,7 @@ type ProcessResult = {
 
 export default tool({
   description:
-    "Execute shell commands through AgentGate policy checks and audited execution.",
+    "Execute shell commands through ARC policy checks and audited execution.",
 
   args: {
     command: tool.schema.string().describe("Shell command to execute"),
@@ -42,7 +42,7 @@ export default tool({
     const command = args.command.trim()
 
     if (command.length === 0) {
-      return "AgentGate blocked execution: empty command."
+      return "ARC blocked execution: empty command."
     }
 
     let commandParts: string[]
@@ -51,7 +51,7 @@ export default tool({
       commandParts = splitShellCommand(command)
     } catch (error) {
       return [
-        "AgentGate blocked execution.",
+        "ARC blocked execution.",
         "",
         "Reason: unsupported shell syntax for the current OpenCode adapter.",
         `Command: ${command}`,
@@ -60,17 +60,17 @@ export default tool({
         "For now, use simple commands like:",
         "  cargo fmt",
         "  cargo nextest run",
-        "  rg AgentGate src",
+        "  rg ARC src",
         "",
         "Pipes, redirects, command substitution and chained commands are intentionally blocked in this spike.",
       ].join("\n")
     }
 
-    const decision = await askAgentGate(commandParts, context.directory)
+    const decision = await askArc(commandParts, context.directory)
 
     if (!decision.ok) {
       return [
-        "AgentGate error while checking command.",
+        "ARC error while checking command.",
         "",
         `Command: ${command}`,
         `Error: ${decision.error ?? "unknown error"}`,
@@ -79,7 +79,7 @@ export default tool({
 
     if (!decision.decision) {
       return [
-        "AgentGate returned an invalid decision response.",
+        "ARC returned an invalid decision response.",
         "",
         `Command: ${command}`,
       ].join("\n")
@@ -87,7 +87,7 @@ export default tool({
 
     if (decision.decision.status === "deny") {
       return [
-        "AgentGate blocked this command.",
+        "ARC blocked this command.",
         "",
         `Command: ${command}`,
         `Decision: ${decision.decision.status}`,
@@ -98,7 +98,7 @@ export default tool({
 
     if (decision.decision.status === "ask") {
       return [
-        "AgentGate requires human approval for this command.",
+        "ARC requires human approval for this command.",
         "",
         `Command: ${command}`,
         `Decision: ${decision.decision.status}`,
@@ -106,40 +106,40 @@ export default tool({
         `Reason: ${decision.decision.reason}`,
         "",
         "This OpenCode adapter is running in safe spike mode, so it will not approve prompts automatically.",
-        "Run it manually through AgentGate if you want to approve it:",
+        "Run it manually through ARC if you want to approve it:",
         "",
-        `  agentgate run ${command}`,
+        `  arc run ${command}`,
       ].join("\n")
     }
 
-    const execution = await runThroughAgentGate(commandParts, context.directory)
+    const execution = await runThroughArc(commandParts, context.directory)
 
     return formatExecutionResult(command, execution)
   },
 })
 
-async function askAgentGate(
+async function askArc(
   commandParts: string[],
   cwd: string,
-): Promise<AgentGateDecisionResponse> {
+): Promise<ArcDecisionResponse> {
   const input = JSON.stringify({
     action: "run",
     command: commandParts,
   })
 
   const result = await runProcess(
-    [...agentgateCommand(), "decide", "--json"],
+    [...arcCommand(), "decide", "--json"],
     cwd,
     input,
   )
 
   try {
-    return JSON.parse(result.stdout) as AgentGateDecisionResponse
+    return JSON.parse(result.stdout) as ArcDecisionResponse
   } catch {
     return {
       ok: false,
       error: [
-        "could not parse AgentGate JSON response",
+        "could not parse ARC JSON response",
         `stdout: ${result.stdout}`,
         `stderr: ${result.stderr}`,
         `exit code: ${result.exitCode}`,
@@ -148,14 +148,14 @@ async function askAgentGate(
   }
 }
 
-async function runThroughAgentGate(
+async function runThroughArc(
   commandParts: string[],
   cwd: string,
 ): Promise<ProcessResult> {
-  return runProcess([...agentgateCommand(), "run", ...commandParts], cwd)
+  return runProcess([...arcCommand(), "run", ...commandParts], cwd)
 }
 
-function agentgateCommand(): string[] {
+function arcCommand(): string[] {
   const configuredBinary = Bun.env.ARC_BIN
 
   if (configuredBinary && configuredBinary.trim().length > 0) {
@@ -204,7 +204,7 @@ async function runProcess(
 
 function formatExecutionResult(command: string, result: ProcessResult): string {
   const output = [
-    "AgentGate allowed and executed this command.",
+    "ARC allowed and executed this command.",
     "",
     `Command: ${command}`,
     `Exit code: ${result.exitCode}`,
