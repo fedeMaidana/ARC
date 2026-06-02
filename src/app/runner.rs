@@ -16,6 +16,7 @@ use super::json;
 enum OutputMode {
     Human,
     Json,
+    Tui,
 }
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -47,7 +48,13 @@ pub fn run_with_args(args: &[String]) -> i32 {
 
 impl OutputMode {
     fn from_args(args: &[String]) -> Self {
-        if is_json_decide_command(args) { Self::Json } else { Self::Human }
+        if is_json_decide_command(args) {
+            Self::Json
+        } else if is_tui_command(args) {
+            Self::Tui
+        } else {
+            Self::Human
+        }
     }
 
     fn should_print_banner(self) -> bool {
@@ -56,7 +63,7 @@ impl OutputMode {
 
     fn print_error(self, error: &anyhow::Error) {
         match self {
-            Self::Human => output::print_app_error(error),
+            Self::Human | Self::Tui => output::print_app_error(error),
             Self::Json => json::print_error(error),
         }
     }
@@ -80,4 +87,8 @@ fn run_inner(args: &[String]) -> Result<i32> {
 
 fn is_json_decide_command(args: &[String]) -> bool {
     args.len() >= 3 && args[1] == "decide" && args[2] == "--json"
+}
+
+fn is_tui_command(args: &[String]) -> bool {
+    args.len() >= 2 && args[1] == "tui"
 }

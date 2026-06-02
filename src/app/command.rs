@@ -9,6 +9,7 @@ use crate::json_api;
 use crate::output;
 use crate::policy;
 use crate::request::Request;
+use crate::tui;
 
 use super::approval;
 use super::audit;
@@ -24,6 +25,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
         CliCommand::ConfigShow => handle_config_show_command(),
         CliCommand::ConfigHelp => handle_config_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
+        CliCommand::Tui => handle_tui_command(),
         CliCommand::PolicyRequest(request) => handle_policy_request(request),
         CliCommand::Help => handle_help_command(),
     }
@@ -104,6 +106,12 @@ fn handle_decide_json_command() -> Result<i32> {
     json::print_response(&response)?;
 
     Ok(execution_report.exit_code())
+}
+
+fn handle_tui_command() -> Result<i32> {
+    tui::run().context("could not start ARC TUI")?;
+
+    Ok(0)
 }
 
 fn handle_policy_request(request: Request) -> Result<i32> {
