@@ -73,7 +73,7 @@ pub fn parse(resource: &str) -> Option<HttpTarget> {
         return None;
     }
 
-    let host = url.host_str()?.trim_end_matches('.').to_ascii_lowercase();
+    let host = normalize_host(url.host_str()?);
 
     if host.is_empty() {
         return None;
@@ -123,7 +123,7 @@ impl HttpTarget {
     }
 
     fn ip_addr(&self) -> Option<IpAddr> {
-        self.host.parse().ok()
+        parse_ip_host(&self.host)
     }
 }
 
@@ -168,14 +168,14 @@ fn is_blocked_by_cidr(target: &HttpTarget, config: &HttpConfig) -> bool {
 fn is_private_ip(ip_addr: IpAddr) -> bool {
     match ip_addr {
         IpAddr::V4(ipv4) => ipv4.is_private(),
-        IpAddr::V6(ipv6) => ipv6.is_unique_local(),
+        IpAddr::V6(ipv6) => is_unique_local_ipv6(&ipv6),
     }
 }
 
 fn is_link_local_ip(ip_addr: IpAddr) -> bool {
     match ip_addr {
         IpAddr::V4(ipv4) => ipv4.is_link_local(),
-        IpAddr::V6(ipv6) => ipv6.is_unicast_link_local(),
+        IpAddr::V6(ipv6) => is_unicast_link_local_ipv6(&ipv6),
     }
 }
 
@@ -184,6 +184,22 @@ fn is_metadata_service_ip(ip_addr: IpAddr) -> bool {
         IpAddr::V4(ipv4) => ipv4.octets() == [169, 254, 169, 254],
         IpAddr::V6(_) => false,
     }
+}
+
+fn is_unique_local_ipv6(ipv6: &std::net::Ipv6Addr) -> bool {
+    ipv6.segments()[0] & 0xfe00 == 0xfc00
+}
+
+fn is_unicast_link_local_ipv6(ipv6: &std::net::Ipv6Addr) -> bool {
+    ipv6.segments()[0] & 0xffc0 == 0xfe80
+}
+
+fn parse_ip_host(host: &str) -> Option<IpAddr> {
+    host.trim_matches(['[', ']']).parse().ok()
+}
+
+fn normalize_host(host: &str) -> String {
+    host.trim_matches(['[', ']']).trim_end_matches('.').to_ascii_lowercase()
 }
 
 fn has_explicit_non_empty_authority(resource: &str) -> bool {
