@@ -4,13 +4,26 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use arc::audit::{self, AuditEvent, AuditExecution};
+use arc::audit::{self, AUDIT_SCHEMA_VERSION, AuditEvent, AuditExecution};
 use arc::config::AuditConfig;
 use arc::decision::{Decision, DecisionReason};
 use arc::executor::{CommandExecutionError, CommandExecutionReport, ExecutionReport};
 use arc::request::{Request, RequestMode};
 
 // ─── < Tests > ──────────────────────────────────────────────────────
+
+#[test]
+fn audit_event_contains_stable_schema_metadata() {
+    let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string(), "-la".to_string()]);
+
+    let decision = Decision::allow(DecisionReason::ActionAllowed);
+    let execution_report = ExecutionReport::CheckMode { allowed: true };
+
+    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+
+    assert_eq!(event.audit_schema_version, AUDIT_SCHEMA_VERSION);
+    assert_eq!(event.reason_code, "action_allowed");
+}
 
 #[test]
 fn audit_event_contains_decision_data() {
@@ -26,6 +39,7 @@ fn audit_event_contains_decision_data() {
     assert_eq!(event.resource, Some("ls -la".to_string()));
     assert_eq!(event.decision, "allow");
     assert_eq!(event.reason, "request matches an allowed policy");
+    assert_eq!(event.reason_code, "action_allowed");
     assert_eq!(event.risk, "low");
     assert!(!event.executed);
     assert_eq!(event.exit_code, 0);
@@ -130,10 +144,12 @@ fn record_event_writes_json_line() {
 
     let json: serde_json::Value = serde_json::from_str(lines[0]).expect("audit line should be valid json");
 
+    assert_eq!(json["audit_schema_version"], AUDIT_SCHEMA_VERSION);
     assert_eq!(json["mode"], "check");
     assert_eq!(json["action"], "run");
     assert_eq!(json["decision"], "allow");
     assert_eq!(json["reason"], "request matches an allowed policy");
+    assert_eq!(json["reason_code"], "action_allowed");
     assert_eq!(json["risk"], "low");
     assert_eq!(json["source"], "test");
 

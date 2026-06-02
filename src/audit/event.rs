@@ -10,10 +10,15 @@ use crate::request::Request;
 
 use super::sanitizer::sanitize_field;
 
+// ─── < Constants > ──────────────────────────────────────────────────
+
+pub const AUDIT_SCHEMA_VERSION: &str = "1";
+
 // ─── < Structs > ────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]
 pub struct AuditEvent {
+    pub audit_schema_version: String,
     pub timestamp_unix_seconds: u64,
     pub source: String,
     pub mode: String,
@@ -21,6 +26,7 @@ pub struct AuditEvent {
     pub resource: Option<String>,
     pub decision: String,
     pub reason: String,
+    pub reason_code: String,
     pub risk: String,
     pub executed: bool,
     pub exit_code: i32,
@@ -64,6 +70,7 @@ pub enum AuditExecution {
 impl AuditEvent {
     pub fn from_parts(source: impl Into<String>, request: &Request, decision: &Decision, execution_report: &ExecutionReport) -> Self {
         Self {
+            audit_schema_version: AUDIT_SCHEMA_VERSION.to_string(),
             timestamp_unix_seconds: current_timestamp_unix_seconds(),
             source: sanitize_field(&source.into()),
             mode: request_mode_text(request).to_string(),
@@ -71,6 +78,7 @@ impl AuditEvent {
             resource: audit_resource(request),
             decision: decision.status.as_text().to_string(),
             reason: decision.reason.as_text().to_string(),
+            reason_code: decision.reason.as_code().to_string(),
             risk: decision.risk.as_text().to_string(),
             executed: was_executed(execution_report),
             exit_code: execution_report.exit_code(),

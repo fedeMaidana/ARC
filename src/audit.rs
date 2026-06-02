@@ -9,5 +9,5 @@ mod writer;
 // ─── < Public Exports > ─────────────────────────────────────────────
 
 pub use self::error::AuditError;
-pub use self::event::{AuditEvent, AuditExecution};
+pub use self::event::{AUDIT_SCHEMA_VERSION, AuditEvent, AuditExecution};
 pub use self::writer::{ensure_audit_log_is_writable, record_event};
