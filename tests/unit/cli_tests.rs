@@ -42,7 +42,13 @@ fn parses_config_check_command() {
 
 #[test]
 fn parses_check_policy_request() {
-    let args = vec!["arc".to_string(), "check".to_string(), "run".to_string(), "ls".to_string(), "-la".to_string()];
+    let args = vec![
+        "arc".to_string(),
+        "check".to_string(),
+        "run".to_string(),
+        "ls".to_string(),
+        "-la".to_string(),
+    ];
 
     let result = CliCommand::from_args(&args);
 

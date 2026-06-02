@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::config::Config;
+use crate::config::{Config, DefaultPolicyAction};
 use crate::decision::{Decision, DecisionReason, RiskLevel};
 use crate::request::Request;
 
@@ -13,8 +13,16 @@ pub fn decide(request: &Request, config: &Config) -> Decision {
         return decision;
     }
 
+    let action_decision = decide_action_policy(request, config);
+
     if let Some(decision) = console::decide(request, config) {
-        return decision;
+        if decision.is_denied() {
+            return decision;
+        }
+
+        if decision.should_ask() && !action_decision.is_denied() {
+            return decision;
+        }
     }
 
     if let Some(decision) = resource::decide(request, config) {
@@ -25,21 +33,25 @@ pub fn decide(request: &Request, config: &Config) -> Decision {
         return decision;
     }
 
-    decide_allowed_action(request, config)
+    action_decision
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
 
-fn decide_allowed_action(request: &Request, config: &Config) -> Decision {
-    if !config.actions.is_allowed_action(&request.action) {
-        return Decision::deny_with_risk(DecisionReason::ActionNotConfigured, RiskLevel::High);
-    }
-
+fn decide_action_policy(request: &Request, config: &Config) -> Decision {
     let request_risk = risk::for_allowed_request(request);
 
-    if config.actions.action_should_ask(&request.action) {
-        return Decision::ask_with_risk(DecisionReason::ActionRequiresApproval, request_risk);
+    if config.actions.is_allowed_action(&request.action) {
+        if config.actions.action_should_ask(&request.action) {
+            return Decision::ask_with_risk(DecisionReason::ActionRequiresApproval, request_risk);
+        }
+
+        return Decision::allow_with_risk(DecisionReason::ActionAllowed, request_risk);
     }
 
-    Decision::allow_with_risk(DecisionReason::ActionAllowed, request_risk)
+    match config.policy.default_action_policy() {
+        DefaultPolicyAction::Allow => Decision::allow_with_risk(DecisionReason::ActionAllowedByDefault, request_risk),
+        DefaultPolicyAction::Ask => Decision::ask_with_risk(DecisionReason::ActionRequiresApprovalByDefault, request_risk),
+        DefaultPolicyAction::Deny => Decision::deny_with_risk(DecisionReason::ActionNotConfigured, RiskLevel::High),
+    }
 }

@@ -27,7 +27,9 @@ pub enum JsonReadError {
 pub fn read_request_from_stdin() -> Result<Request, JsonReadError> {
     let mut input = String::new();
 
-    io::stdin().read_to_string(&mut input).map_err(|source| JsonReadError::ReadStdin { source })?;
+    io::stdin()
+        .read_to_string(&mut input)
+        .map_err(|source| JsonReadError::ReadStdin { source })?;
 
     json_api::request_from_json(&input).map_err(JsonReadError::Parse)
 }

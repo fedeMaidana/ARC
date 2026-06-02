@@ -103,8 +103,15 @@ fn execute_uses_configured_working_directory() {
 
 #[test]
 fn execute_injects_configured_environment_variables() {
-    let request =
-        Request::new(RequestMode::Execute, "run".to_string(), vec!["sh".to_string(), "-c".to_string(), "printf \"$ARC_EXECUTOR_TEST_VALUE\"".to_string()]);
+    let request = Request::new(
+        RequestMode::Execute,
+        "run".to_string(),
+        vec![
+            "sh".to_string(),
+            "-c".to_string(),
+            "printf \"$ARC_EXECUTOR_TEST_VALUE\"".to_string(),
+        ],
+    );
 
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let mut execution_config = execution_config(10, 100_000);

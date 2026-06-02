@@ -9,7 +9,11 @@ use crate::request::Request;
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn ask_and_maybe_execute(request: &Request, execution_config: &ExecutionConfig, console_config: &ConsoleConfig) -> Result<ExecutionReport> {
+pub fn ask_and_maybe_execute(
+    request: &Request,
+    execution_config: &ExecutionConfig,
+    console_config: &ConsoleConfig,
+) -> Result<ExecutionReport> {
     let prompt = approval_prompt(request);
 
     let answer = ask::ask_yes_no(&prompt).context("could not ask for request approval")?;

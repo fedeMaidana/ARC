@@ -1,8 +1,8 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
 use arc::config::{
-    ActionsConfig, AuditConfig, Config, ConfigValidationError, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig,
-    validate,
+    ActionsConfig, AuditConfig, Config, ConfigValidationError, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig,
+    PolicyConfig, ResourcesConfig, validate,
 };
 
 // ─── < Tests > ──────────────────────────────────────────────────────
@@ -45,7 +45,14 @@ fn rejects_unsupported_console_command_mode() {
 
     config.console.command_rules[0].mode = "alow".to_string();
 
-    assert_validation_error(&config, &["console.commands[git].mode", "unsupported value \"alow\"", "expected one of: allow, ask, deny"]);
+    assert_validation_error(
+        &config,
+        &[
+            "console.commands[git].mode",
+            "unsupported value \"alow\"",
+            "expected one of: allow, ask, deny",
+        ],
+    );
 }
 
 #[test]
@@ -124,7 +131,13 @@ fn rejects_empty_blocked_arguments_when_commands_can_be_allowed() {
 
     config.console.blocked_arguments.clear();
 
-    assert_validation_error(&config, &["console.blocked_arguments", "must not be empty when commands can be allowed or asked"]);
+    assert_validation_error(
+        &config,
+        &[
+            "console.blocked_arguments",
+            "must not be empty when commands can be allowed or asked",
+        ],
+    );
 }
 
 // ─── < Helpers > ────────────────────────────────────────────────────

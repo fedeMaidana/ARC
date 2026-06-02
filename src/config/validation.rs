@@ -113,7 +113,10 @@ impl ConfigValidator {
 
 fn validate_config_version(validator: &mut ConfigValidator, config: &Config) {
     if config.config_version != SUPPORTED_CONFIG_VERSION {
-        validator.issue("config_version", format!("unsupported config version {}; supported version: {}", config.config_version, SUPPORTED_CONFIG_VERSION));
+        validator.issue(
+            "config_version",
+            format!("unsupported config version {}; supported version: {}", config.config_version, SUPPORTED_CONFIG_VERSION),
+        );
     }
 }
 
@@ -164,7 +167,10 @@ fn validate_command_allowed_paths(validator: &mut ConfigValidator, console: &Con
     for rule in &console.command_rules {
         for (index, allowed_path) in rule.allowed_paths.iter().enumerate() {
             if !Path::new(allowed_path).is_absolute() {
-                validator.issue(format!("{}.allowed_paths[{index}]", command_field(rule, "")), format!("path must be absolute: \"{allowed_path}\""));
+                validator.issue(
+                    format!("{}.allowed_paths[{index}]", command_field(rule, "")),
+                    format!("path must be absolute: \"{allowed_path}\""),
+                );
             }
         }
     }
@@ -183,16 +189,25 @@ fn validate_path_resolution_rules(validator: &mut ConfigValidator, console: &Con
     }
 
     if !console.allowed_commands.is_empty() {
-        validator.issue("console.allowed_commands", "cannot be used when console.allow_path_resolution=false; use [[console.commands]] with allowed_paths");
+        validator.issue(
+            "console.allowed_commands",
+            "cannot be used when console.allow_path_resolution=false; use [[console.commands]] with allowed_paths",
+        );
     }
 
     if !console.ask_commands.is_empty() {
-        validator.issue("console.ask_commands", "cannot be used when console.allow_path_resolution=false; use [[console.commands]] with allowed_paths");
+        validator.issue(
+            "console.ask_commands",
+            "cannot be used when console.allow_path_resolution=false; use [[console.commands]] with allowed_paths",
+        );
     }
 
     for rule in &console.command_rules {
         if is_permissive_mode(&rule.mode) && rule.allowed_paths.is_empty() {
-            validator.issue(command_field(rule, ".allowed_paths"), "must not be empty when console.allow_path_resolution=false and command mode is allow/ask");
+            validator.issue(
+                command_field(rule, ".allowed_paths"),
+                "must not be empty when console.allow_path_resolution=false and command mode is allow/ask",
+            );
         }
     }
 }

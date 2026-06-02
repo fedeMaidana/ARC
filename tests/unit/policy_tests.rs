@@ -1,6 +1,8 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use arc::config::{ActionsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig};
+use arc::config::{
+    ActionsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig,
+};
 use arc::decision::{Decision, DecisionReason, DecisionStatus, RiskLevel};
 use arc::policy;
 use arc::request::{Request, RequestMode};
@@ -61,6 +63,45 @@ fn denies_unconfigured_action() {
     assert_decision(decision, DecisionStatus::Deny, DecisionReason::ActionNotConfigured, RiskLevel::High);
 }
 
+#[test]
+fn allows_unconfigured_action_when_default_action_is_allow() {
+    let mut config = default_config();
+
+    config.policy.default_action = "allow".to_string();
+
+    let request = request("teleport", &[]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Allow, DecisionReason::ActionAllowedByDefault, RiskLevel::Low);
+}
+
+#[test]
+fn asks_for_unconfigured_action_when_default_action_is_ask() {
+    let mut config = default_config();
+
+    config.policy.default_action = "ask".to_string();
+
+    let request = request("teleport", &[]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Ask, DecisionReason::ActionRequiresApprovalByDefault, RiskLevel::Low);
+}
+
+#[test]
+fn explicit_blocked_action_overrides_default_action_allow() {
+    let mut config = default_config();
+
+    config.policy.default_action = "allow".to_string();
+
+    let request = request("delete_file", &["README.md"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ActionBlocked, RiskLevel::Critical);
+}
+
 // ─── < Tests: Console Rules > ───────────────────────────────────────
 
 #[test]
@@ -104,6 +145,85 @@ fn denies_console_command_not_in_allowlist() {
     let decision = policy::decide(&request, &config);
 
     assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleCommandNotAllowed, RiskLevel::High);
+}
+
+#[test]
+fn allows_unlisted_console_command_when_default_command_policy_is_allow() {
+    let mut config = default_config();
+
+    config.console.default_command_policy = "allow".to_string();
+
+    let request = request("run", &["python", "script.py"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Allow, DecisionReason::ActionAllowed, RiskLevel::Low);
+}
+
+#[test]
+fn asks_for_unlisted_console_command_when_default_command_policy_is_ask() {
+    let mut config = default_config();
+
+    config.console.default_command_policy = "ask".to_string();
+
+    let request = request("run", &["python", "script.py"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Ask, DecisionReason::ConsoleCommandRequiresApproval, RiskLevel::Medium);
+}
+
+#[test]
+fn explicit_allowed_console_command_overrides_default_command_policy_ask() {
+    let mut config = default_config();
+
+    config.console.default_command_policy = "ask".to_string();
+
+    let request = request("run", &["echo", "hello"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Allow, DecisionReason::ActionAllowed, RiskLevel::Low);
+}
+
+#[test]
+fn explicit_blocked_console_command_overrides_default_command_policy_allow() {
+    let mut config = default_config();
+
+    config.console.default_command_policy = "allow".to_string();
+
+    let request = request("run", &["rm", "-rf", "/"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleCommandBlocked, RiskLevel::Critical);
+}
+
+#[test]
+fn blocked_argument_overrides_default_command_policy_allow() {
+    let mut config = default_config();
+
+    config.console.default_command_policy = "allow".to_string();
+
+    let request = request("run", &["python", "--danger"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ConsoleArgumentBlocked, RiskLevel::Critical);
+}
+
+#[test]
+fn default_action_deny_overrides_default_command_policy_ask_for_unconfigured_run_action() {
+    let mut config = default_config();
+
+    config.actions.allowed.retain(|action| action != "run");
+    config.console.default_command_policy = "ask".to_string();
+
+    let request = request("run", &["python", "script.py"]);
+
+    let decision = policy::decide(&request, &config);
+
+    assert_decision(decision, DecisionStatus::Deny, DecisionReason::ActionNotConfigured, RiskLevel::High);
 }
 
 #[test]
@@ -447,7 +567,7 @@ fn default_config() -> Config {
             allow_path_resolution: true,
             allowed_commands: strings(&["cargo", "git", "rg", "ls", "pwd", "cat", "echo"]),
             blocked_commands: strings(&["rm", "sudo", "su", "sh", "bash"]),
-            blocked_arguments: strings(&["-rf", "--no-preserve-root", "/", "/etc", "/root", "..", "~"]),
+            blocked_arguments: strings(&["-rf", "--no-preserve-root", "/", "/etc", "/root", "..", "~", "--danger"]),
             ask_commands: Vec::new(),
             command_rules: command_rules(),
         },

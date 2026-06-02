@@ -157,7 +157,14 @@ fn render_option(stdout: &mut Stdout, label: &str, is_selected: bool) -> Result<
     queue!(stdout, Print(guide()))?;
 
     if is_selected {
-        queue!(stdout, SetForegroundColor(Color::Cyan), SetAttribute(Attribute::Bold), Print(padded_content), ResetColor, SetAttribute(Attribute::Reset))?;
+        queue!(
+            stdout,
+            SetForegroundColor(Color::Cyan),
+            SetAttribute(Attribute::Bold),
+            Print(padded_content),
+            ResetColor,
+            SetAttribute(Attribute::Reset)
+        )?;
     } else {
         queue!(stdout, SetForegroundColor(Color::DarkGrey), Print(padded_content), ResetColor)?;
     }

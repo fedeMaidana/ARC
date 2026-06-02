@@ -51,6 +51,10 @@ impl Request {
     }
 
     pub fn command_args(&self) -> &[String] {
-        if self.command_parts.len() <= 1 { &[] } else { &self.command_parts[1..] }
+        if self.command_parts.len() <= 1 {
+            &[]
+        } else {
+            &self.command_parts[1..]
+        }
     }
 }

@@ -22,7 +22,10 @@ pub fn load(path: impl AsRef<Path>) -> Result<Config, ConfigError> {
         source,
     })?;
 
-    validate(&config).map_err(|source| ConfigError::Validation { path: path_display, source })?;
+    validate(&config).map_err(|source| ConfigError::Validation {
+        path: path_display,
+        source,
+    })?;
 
     Ok(config)
 }

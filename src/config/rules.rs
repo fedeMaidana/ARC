@@ -2,7 +2,7 @@
 
 use crate::{http_target, resource};
 
-use super::{ActionsConfig, ConsoleCommandRule, ConsoleConfig, HttpConfig, ResourcesConfig};
+use super::{ActionsConfig, ConsoleCommandRule, ConsoleConfig, HttpConfig, PolicyConfig, ResourcesConfig};
 
 // ─── < Implementations > ────────────────────────────────────────────
 
@@ -16,11 +16,24 @@ impl ActionsConfig {
     }
 
     pub fn action_needs_resource(&self, action: &str) -> bool {
-        self.need_resource.iter().any(|action_that_needs_resource| action_that_needs_resource == action)
+        self.need_resource
+            .iter()
+            .any(|action_that_needs_resource| action_that_needs_resource == action)
     }
 
     pub fn action_should_ask(&self, action: &str) -> bool {
         self.ask.iter().any(|ask_action| ask_action == action)
+    }
+}
+
+impl PolicyConfig {
+    pub fn default_action_policy(&self) -> DefaultPolicyAction {
+        match self.default_action.as_str() {
+            "allow" => DefaultPolicyAction::Allow,
+            "ask" => DefaultPolicyAction::Ask,
+            "deny" => DefaultPolicyAction::Deny,
+            _ => DefaultPolicyAction::Deny,
+        }
     }
 }
 
@@ -44,26 +57,21 @@ impl HttpConfig {
     }
 
     pub fn is_allowed_scheme(&self, scheme: &str) -> bool {
-        self.allowed_schemes.iter().any(|allowed_scheme| allowed_scheme.eq_ignore_ascii_case(scheme))
+        self.allowed_schemes
+            .iter()
+            .any(|allowed_scheme| allowed_scheme.eq_ignore_ascii_case(scheme))
     }
 
     pub fn is_blocked_host(&self, host: &str) -> bool {
-        self.blocked_hosts.iter().any(|blocked_host| blocked_host.eq_ignore_ascii_case(host))
+        self.blocked_hosts
+            .iter()
+            .any(|blocked_host| blocked_host.eq_ignore_ascii_case(host))
     }
 }
 
 impl ConsoleConfig {
     pub fn is_allowed_command(&self, command_name: &str) -> bool {
-        if self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Deny) {
-            return false;
-        }
-
-        if self.allowed_commands.iter().any(|command| command == command_name) {
-            return true;
-        }
-
-        self.command_rule(command_name)
-            .is_some_and(|rule| matches!(rule.policy(), ConsoleCommandPolicy::Allow | ConsoleCommandPolicy::Ask))
+        matches!(self.command_policy(command_name), ConsoleCommandPolicy::Allow | ConsoleCommandPolicy::Ask)
     }
 
     pub fn is_blocked_command(&self, command_name: &str) -> bool {
@@ -71,7 +79,8 @@ impl ConsoleConfig {
             return true;
         }
 
-        self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Deny)
+        self.command_rule(command_name)
+            .is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Deny)
     }
 
     pub fn is_blocked_argument(&self, argument: &str) -> bool {
@@ -79,11 +88,7 @@ impl ConsoleConfig {
     }
 
     pub fn command_should_ask(&self, command_name: &str) -> bool {
-        if self.ask_commands.iter().any(|command| command == command_name) {
-            return true;
-        }
-
-        self.command_rule(command_name).is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Ask)
+        self.command_policy(command_name) == ConsoleCommandPolicy::Ask
     }
 
     pub fn command_rule(&self, command_name: &str) -> Option<&ConsoleCommandRule> {
@@ -91,11 +96,52 @@ impl ConsoleConfig {
     }
 
     pub fn is_blocked_command_argument(&self, command_name: &str, argument: &str) -> bool {
-        self.command_rule(command_name).is_some_and(|rule| rule.is_blocked_argument(argument))
+        self.command_rule(command_name)
+            .is_some_and(|rule| rule.is_blocked_argument(argument))
     }
 
     pub fn command_argument_should_ask(&self, command_name: &str, argument: &str) -> bool {
-        self.command_rule(command_name).is_some_and(|rule| rule.argument_should_ask(argument))
+        self.command_rule(command_name)
+            .is_some_and(|rule| rule.argument_should_ask(argument))
+    }
+
+    pub fn command_policy(&self, command_name: &str) -> ConsoleCommandPolicy {
+        if self.is_blocked_command(command_name) {
+            return ConsoleCommandPolicy::Deny;
+        }
+
+        if self.ask_commands.iter().any(|command| command == command_name) {
+            return ConsoleCommandPolicy::Ask;
+        }
+
+        if self
+            .command_rule(command_name)
+            .is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Ask)
+        {
+            return ConsoleCommandPolicy::Ask;
+        }
+
+        if self.allowed_commands.iter().any(|command| command == command_name) {
+            return ConsoleCommandPolicy::Allow;
+        }
+
+        if self
+            .command_rule(command_name)
+            .is_some_and(|rule| rule.policy() == ConsoleCommandPolicy::Allow)
+        {
+            return ConsoleCommandPolicy::Allow;
+        }
+
+        self.default_command_policy()
+    }
+
+    fn default_command_policy(&self) -> ConsoleCommandPolicy {
+        match self.default_command_policy.as_str() {
+            "allow" => ConsoleCommandPolicy::Allow,
+            "ask" => ConsoleCommandPolicy::Ask,
+            "deny" => ConsoleCommandPolicy::Deny,
+            _ => ConsoleCommandPolicy::Deny,
+        }
     }
 }
 
@@ -159,6 +205,13 @@ impl ConsoleCommandRule {
 }
 
 // ─── < Enums > ──────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DefaultPolicyAction {
+    Allow,
+    Ask,
+    Deny,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConsoleCommandPolicy {

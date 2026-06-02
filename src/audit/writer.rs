@@ -64,10 +64,14 @@ fn ensure_parent_dir_exists(path: &Path) -> Result<(), AuditError> {
 }
 
 fn open_audit_log(path: &Path) -> Result<File, AuditError> {
-    OpenOptions::new().create(true).append(true).open(path).map_err(|source| AuditError::Open {
-        path: path.display().to_string(),
-        source,
-    })
+    OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|source| AuditError::Open {
+            path: path.display().to_string(),
+            source,
+        })
 }
 
 #[cfg(unix)]

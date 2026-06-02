@@ -9,7 +9,12 @@ use super::model::ExecutionReport;
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn execute(request: &Request, decision: &Decision, execution_config: &ExecutionConfig, console_config: &ConsoleConfig) -> ExecutionReport {
+pub fn execute(
+    request: &Request,
+    decision: &Decision,
+    execution_config: &ExecutionConfig,
+    console_config: &ConsoleConfig,
+) -> ExecutionReport {
     if request.is_check_mode() {
         return ExecutionReport::CheckMode {
             allowed: !decision.is_denied(),

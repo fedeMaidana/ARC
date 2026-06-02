@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::config::{Config, ConsoleSubcommandPolicy};
+use crate::config::{Config, ConsoleCommandPolicy, ConsoleSubcommandPolicy};
 use crate::decision::{Decision, DecisionReason, RiskLevel};
 use crate::request::Request;
 
@@ -21,12 +21,14 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
         return Some(Decision::deny_with_risk(DecisionReason::ConsoleCommandBlocked, RiskLevel::Critical));
     }
 
-    if !config.console.is_allowed_command(command_name) {
-        return Some(Decision::deny_with_risk(DecisionReason::ConsoleCommandNotAllowed, RiskLevel::High));
-    }
-
     if let Some(decision) = decide_command_rule(command_name, request, config) {
         return Some(decision);
+    }
+
+    let command_policy = config.console.command_policy(command_name);
+
+    if command_policy == ConsoleCommandPolicy::Deny {
+        return Some(Decision::deny_with_risk(DecisionReason::ConsoleCommandNotAllowed, RiskLevel::High));
     }
 
     if request
@@ -42,14 +44,19 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
         .iter()
         .any(|argument| config.console.command_argument_should_ask(command_name, argument))
     {
-        return Some(Decision::ask_with_risk(DecisionReason::ConsoleArgumentRequiresApproval, risk::for_allowed_console_command(command_name)));
+        return Some(Decision::ask_with_risk(
+            DecisionReason::ConsoleArgumentRequiresApproval,
+            risk::for_allowed_console_command(command_name),
+        ));
     }
 
-    if config.console.command_should_ask(command_name) {
-        return Some(Decision::ask_with_risk(DecisionReason::ConsoleCommandRequiresApproval, risk::for_allowed_console_command(command_name)));
+    match command_policy {
+        ConsoleCommandPolicy::Allow => None,
+        ConsoleCommandPolicy::Ask => {
+            Some(Decision::ask_with_risk(DecisionReason::ConsoleCommandRequiresApproval, risk::for_allowed_console_command(command_name)))
+        }
+        ConsoleCommandPolicy::Deny => Some(Decision::deny_with_risk(DecisionReason::ConsoleCommandNotAllowed, RiskLevel::High)),
     }
-
-    None
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
@@ -59,9 +66,10 @@ fn decide_command_rule(command_name: &str, request: &Request, config: &Config) -
 
     match command_rule.subcommand_policy(primary_subcommand(request)) {
         ConsoleSubcommandPolicy::Allowed => None,
-        ConsoleSubcommandPolicy::Ask => {
-            Some(Decision::ask_with_risk(DecisionReason::ConsoleSubcommandRequiresApproval, risk::for_allowed_console_command(command_name)))
-        }
+        ConsoleSubcommandPolicy::Ask => Some(Decision::ask_with_risk(
+            DecisionReason::ConsoleSubcommandRequiresApproval,
+            risk::for_allowed_console_command(command_name),
+        )),
         ConsoleSubcommandPolicy::Blocked => Some(Decision::deny_with_risk(DecisionReason::ConsoleSubcommandBlocked, RiskLevel::Critical)),
         ConsoleSubcommandPolicy::NotAllowed => Some(Decision::deny_with_risk(DecisionReason::ConsoleSubcommandNotAllowed, RiskLevel::High)),
         ConsoleSubcommandPolicy::Required => Some(Decision::deny_with_risk(DecisionReason::ConsoleSubcommandRequired, RiskLevel::Medium)),
