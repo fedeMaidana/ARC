@@ -24,6 +24,11 @@ fn help_command_prints_usage() {
     assert!(stdout.contains("arc settings show"));
     assert!(stdout.contains("arc config ... is kept as a compatibility alias"));
 
+    assert!(stdout.contains("Agents"));
+    assert!(stdout.contains("arc agents scan"));
+    assert!(stdout.contains("arc agents list"));
+    assert!(stdout.contains("arc agents env <id>"));
+
     assert!(stdout.contains("Policy"));
     assert!(stdout.contains("arc run <command> [args...]"));
     assert!(stdout.contains("arc check run <command> [args...]"));
@@ -37,6 +42,8 @@ fn help_command_prints_usage() {
     assert!(stdout.contains("ARC_POLICY_ENGINE=native"));
     assert!(stdout.contains("ARC_POLICY_ENGINE=rego"));
     assert!(stdout.contains("ARC_REGO_POLICY_PATH"));
+    assert!(stdout.contains("ARC_AGENT_SOURCES"));
+    assert!(stdout.contains("ARC_SOURCE"));
     assert!(stdout.contains("ARC_AUDIT_ENABLED"));
 }
 
@@ -84,6 +91,7 @@ fn unknown_settings_command_prints_cli_error() {
     assert!(stdout.contains("unknown runtime settings command 'nope'"));
     assert!(stdout.contains("Setup"));
     assert!(stdout.contains("Runtime settings"));
+    assert!(stdout.contains("Agents"));
     assert!(stdout.contains("Policy"));
     assert!(stdout.contains("Interactive"));
 }
@@ -100,6 +108,7 @@ fn unknown_config_command_prints_cli_error_for_compatibility_alias() {
     assert!(stdout.contains("unknown runtime settings command 'nope'"));
     assert!(stdout.contains("Setup"));
     assert!(stdout.contains("Runtime settings"));
+    assert!(stdout.contains("Agents"));
     assert!(stdout.contains("Policy"));
     assert!(stdout.contains("Interactive"));
 }
@@ -116,6 +125,7 @@ fn check_without_action_prints_cli_error() {
     assert!(stdout.contains("missing action after 'check'"));
     assert!(stdout.contains("Setup"));
     assert!(stdout.contains("Runtime settings"));
+    assert!(stdout.contains("Agents"));
     assert!(stdout.contains("Policy"));
     assert!(stdout.contains("Interactive"));
 }

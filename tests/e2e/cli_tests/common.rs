@@ -1,8 +1,9 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use std::env;
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -25,6 +26,7 @@ pub fn run_arc(args: &[&str]) -> Output {
 pub struct TestFixture {
     root_dir: PathBuf,
     env_overrides: Vec<(String, String)>,
+    path_prepend: Vec<PathBuf>,
 }
 
 impl TestFixture {
@@ -36,6 +38,7 @@ impl TestFixture {
         Self {
             root_dir,
             env_overrides: Vec::new(),
+            path_prepend: Vec::new(),
         }
     }
 
@@ -45,6 +48,23 @@ impl TestFixture {
         fixture.env_overrides.push((key.to_string(), value.to_string()));
 
         fixture
+    }
+
+    pub fn create_path_command(&mut self, name: &str) -> PathBuf {
+        let bin_dir = self.root_dir.join("bin");
+
+        fs::create_dir_all(&bin_dir).expect("test bin directory should be created");
+
+        if !self.path_prepend.iter().any(|path| path == &bin_dir) {
+            self.path_prepend.push(bin_dir.clone());
+        }
+
+        let command_path = bin_dir.join(name);
+
+        fs::write(&command_path, "#!/usr/bin/env sh\nexit 0\n").expect("test command should be written");
+        make_executable(&command_path);
+
+        command_path
     }
 
     pub fn run(&self, args: &[&str]) -> Output {
@@ -83,6 +103,10 @@ impl TestFixture {
             .env_remove("ARC_AGENT_SOURCES")
             .env_remove("ARC_SOURCE")
             .current_dir(&self.root_dir);
+
+        if let Some(path) = test_path(&self.path_prepend) {
+            command.env("PATH", path);
+        }
 
         for (key, value) in &self.env_overrides {
             command.env(key, value);
@@ -128,5 +152,32 @@ fn unique_temp_dir(name: &str) -> PathBuf {
         .expect("system time should be after unix epoch")
         .as_nanos();
 
-    std::env::temp_dir().join(format!("arc-e2e-{name}-{}-{timestamp}", std::process::id()))
+    env::temp_dir().join(format!("arc-e2e-{name}-{}-{timestamp}", std::process::id()))
 }
+
+fn test_path(path_prepend: &[PathBuf]) -> Option<std::ffi::OsString> {
+    if path_prepend.is_empty() {
+        return None;
+    }
+
+    let existing_path = env::var_os("PATH").unwrap_or_default();
+    let mut paths = path_prepend.to_vec();
+
+    paths.extend(env::split_paths(&existing_path));
+
+    env::join_paths(paths).ok()
+}
+
+#[cfg(unix)]
+fn make_executable(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut permissions = fs::metadata(path).expect("test command metadata should be readable").permissions();
+
+    permissions.set_mode(0o755);
+
+    fs::set_permissions(path, permissions).expect("test command permissions should be updated");
+}
+
+#[cfg(not(unix))]
+fn make_executable(_path: &Path) {}

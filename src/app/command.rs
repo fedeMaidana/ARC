@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Result};
 
+use crate::agent;
 use crate::cli::{AgentEnvRequest, CliCommand};
 use crate::config::{self, AgentSourceConfig};
 use crate::executor;
@@ -25,6 +26,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
         CliCommand::SettingsShow => handle_settings_show_command(),
         CliCommand::SettingsHelp => handle_settings_help_command(),
         CliCommand::AgentsList => handle_agents_list_command(),
+        CliCommand::AgentsScan => handle_agents_scan_command(),
         CliCommand::AgentsEnv(request) => handle_agents_env_command(request),
         CliCommand::AgentsHelp => handle_agents_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
@@ -83,6 +85,14 @@ fn handle_agents_list_command() -> Result<i32> {
     let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
 
     output::print_agents(&loaded_config);
+
+    Ok(0)
+}
+
+fn handle_agents_scan_command() -> Result<i32> {
+    let discoveries = agent::scan_known_agents();
+
+    output::print_agent_scan_results(&discoveries);
 
     Ok(0)
 }

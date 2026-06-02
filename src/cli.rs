@@ -77,6 +77,7 @@ pub enum CliCommand {
     SettingsShow,
     SettingsHelp,
     AgentsList,
+    AgentsScan,
     AgentsEnv(AgentEnvRequest),
     AgentsHelp,
     DecideJson,
@@ -127,6 +128,7 @@ impl CliCommand {
 
         match args[2].as_str() {
             "list" => Ok(Self::AgentsList),
+            "scan" => Ok(Self::AgentsScan),
             "env" => Self::parse_agents_env_command(args),
             "help" | "-h" | "--help" => Ok(Self::AgentsHelp),
             command => Err(CliError::UnknownAgentCommand {

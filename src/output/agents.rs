@@ -1,5 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use crate::agent::AgentDiscovery;
 use crate::config::{AgentSourceConfig, Config};
 use crate::ui;
 
@@ -34,6 +35,22 @@ pub fn print_agents(config: &Config) {
     println!("{}", ui::dim("Tip: start an agent with ARC_SOURCE=<agent-id> so ARC can audit where requests came from."));
 }
 
+pub fn print_agent_scan_results(discoveries: &[AgentDiscovery]) {
+    println!("{}", ui::section("Agent scan"));
+
+    let detected_count = discoveries.iter().filter(|discovery| discovery.is_detected()).count();
+
+    println!("  {} {detected_count}/{}", ui::bold("detected"), discoveries.len());
+    println!();
+
+    for discovery in discoveries {
+        print_agent_discovery(discovery);
+    }
+
+    println!();
+    println!("{}", ui::dim("Next: ARC will use these discoveries during init to register agents and install launcher shims."));
+}
+
 pub fn print_agent_env_exports(source: &AgentSourceConfig) {
     let entry = format_agent_source_environment_entry(source);
 
@@ -47,6 +64,20 @@ pub fn print_agent_env_exports(source: &AgentSourceConfig) {
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
+
+fn print_agent_discovery(discovery: &AgentDiscovery) {
+    if let Some(path) = discovery.path() {
+        println!("  {} {}", ui::green("✅"), ui::bold(discovery.id()));
+        println!("      name: {}", discovery.display_name());
+        println!("      command: {}", discovery.detected_command().unwrap_or("unknown"));
+        println!("      path: {}", path.display());
+    } else {
+        println!("  {} {}", ui::yellow("⚠️ "), ui::bold(discovery.id()));
+        println!("      name: {}", discovery.display_name());
+        println!("      commands checked: {}", discovery.command_names().join(", "));
+        println!("      status: not found");
+    }
+}
 
 fn format_agent_source_environment_entry(source: &AgentSourceConfig) -> String {
     let mut parts = vec![

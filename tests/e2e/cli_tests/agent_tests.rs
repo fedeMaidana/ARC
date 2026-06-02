@@ -22,6 +22,40 @@ fn agents_list_prints_builtin_sources() {
 }
 
 #[test]
+fn agents_scan_prints_known_agent_detection_results() {
+    let output = run_arc(&["agents", "scan"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Agent scan"));
+    assert!(stdout.contains("opencode"));
+    assert!(stdout.contains("OpenCode"));
+    assert!(stdout.contains("claude-code"));
+    assert!(stdout.contains("Claude Code"));
+    assert!(stdout.contains("codex"));
+    assert!(stdout.contains("Codex"));
+}
+
+#[test]
+fn agents_scan_detects_known_agent_from_path() {
+    let mut fixture = TestFixture::new("agents-scan-detects-opencode");
+
+    let command_path = fixture.create_path_command("opencode");
+    let output = fixture.run(&["agents", "scan"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("opencode"));
+    assert!(stdout.contains("OpenCode"));
+    assert!(stdout.contains("command: opencode"));
+    assert!(stdout.contains(&command_path.display().to_string()));
+}
+
+#[test]
 fn agents_list_prints_sources_from_environment() {
     let fixture = TestFixture::with_env(
         "agents-list-custom-source",
