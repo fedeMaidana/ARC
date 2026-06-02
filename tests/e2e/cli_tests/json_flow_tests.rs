@@ -72,3 +72,37 @@ fn decide_json_invalid_request_returns_json_error() {
     assert_eq!(response["error_code"], "missing_command");
     assert_eq!(response["error"], "run action requires a command array");
 }
+
+#[test]
+fn decide_json_unknown_field_returns_json_error() {
+    let fixture = TestFixture::new("decide-json-unknown-field");
+
+    let output = fixture.run_with_stdin(&["decide", "--json"], r#"{"action":"run","command":["echo","hello"],"unexpected":true}"#);
+
+    assert_eq!(output.status.code(), Some(2));
+
+    let response = json_stdout(&output);
+
+    assert_eq!(response["ok"], false);
+    assert_eq!(response["api_version"], "1");
+    assert_eq!(response["kind"], "error");
+    assert_eq!(response["error_code"], "invalid_json");
+    assert_eq!(response["error"], "invalid JSON request");
+}
+
+#[test]
+fn decide_json_empty_command_part_returns_json_error() {
+    let fixture = TestFixture::new("decide-json-empty-command-part");
+
+    let output = fixture.run_with_stdin(&["decide", "--json"], r#"{"action":"run","command":["echo",""]}"#);
+
+    assert_eq!(output.status.code(), Some(2));
+
+    let response = json_stdout(&output);
+
+    assert_eq!(response["ok"], false);
+    assert_eq!(response["api_version"], "1");
+    assert_eq!(response["kind"], "error");
+    assert_eq!(response["error_code"], "empty_command_part");
+    assert_eq!(response["error"], "command[1] cannot be empty");
+}

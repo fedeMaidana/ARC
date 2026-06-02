@@ -21,6 +21,18 @@ fn parses_run_request_from_json_command_array() {
 }
 
 #[test]
+fn trims_action_before_building_request() {
+    let input = r#"{"action":" run ","command":["echo","hola"]}"#;
+
+    let request = json_api::request_from_json(input).expect("request should parse");
+
+    assert!(request.is_check_mode());
+    assert_eq!(request.action, "run");
+    assert_eq!(request.command_name(), Some("echo"));
+    assert_eq!(request.command_args(), &["hola".to_string()]);
+}
+
+#[test]
 fn parses_resource_request_from_json_resource() {
     let input = r#"{"action":"http_get","resource":"https://example.com"}"#;
 
@@ -29,6 +41,47 @@ fn parses_resource_request_from_json_resource() {
     assert!(matches!(request.mode, RequestMode::Check));
     assert_eq!(request.action, "http_get");
     assert_eq!(request.resource, "https://example.com");
+}
+
+#[test]
+fn trims_resource_before_building_request() {
+    let input = r#"{"action":"http_get","resource":" https://example.com "}"#;
+
+    let request = json_api::request_from_json(input).expect("request should parse");
+
+    assert!(matches!(request.mode, RequestMode::Check));
+    assert_eq!(request.action, "http_get");
+    assert_eq!(request.resource, "https://example.com");
+}
+
+#[test]
+fn rejects_unknown_json_fields() {
+    let input = r#"{"action":"run","command":["echo","hola"],"surprise":true}"#;
+
+    let error = json_api::request_from_json(input).expect_err("request should fail");
+
+    assert_eq!(error.code(), "invalid_json");
+    assert_eq!(error.to_string(), "invalid JSON request");
+}
+
+#[test]
+fn rejects_missing_action() {
+    let input = r#"{"action":" ","resource":"https://example.com"}"#;
+
+    let error = json_api::request_from_json(input).expect_err("request should fail");
+
+    assert_eq!(error.code(), "missing_action");
+    assert_eq!(error.to_string(), "action is required");
+}
+
+#[test]
+fn rejects_empty_resource() {
+    let input = r#"{"action":"http_get","resource":" "}"#;
+
+    let error = json_api::request_from_json(input).expect_err("request should fail");
+
+    assert_eq!(error.code(), "empty_resource");
+    assert_eq!(error.to_string(), "resource cannot be empty");
 }
 
 #[test]
@@ -42,6 +95,36 @@ fn rejects_run_without_command_array() {
 }
 
 #[test]
+fn rejects_empty_command_array() {
+    let input = r#"{"action":"run","command":[]}"#;
+
+    let error = json_api::request_from_json(input).expect_err("request should fail");
+
+    assert_eq!(error.code(), "empty_command");
+    assert_eq!(error.to_string(), "command array cannot be empty");
+}
+
+#[test]
+fn rejects_empty_command_part() {
+    let input = r#"{"action":"run","command":["echo",""]}"#;
+
+    let error = json_api::request_from_json(input).expect_err("request should fail");
+
+    assert_eq!(error.code(), "empty_command_part");
+    assert_eq!(error.to_string(), "command[1] cannot be empty");
+}
+
+#[test]
+fn rejects_whitespace_command_part() {
+    let input = r#"{"action":"run","command":["echo","   "]}"#;
+
+    let error = json_api::request_from_json(input).expect_err("request should fail");
+
+    assert_eq!(error.code(), "empty_command_part");
+    assert_eq!(error.to_string(), "command[1] cannot be empty");
+}
+
+#[test]
 fn rejects_command_for_non_run_action() {
     let input = r#"{"action":"http_get","command":["echo","hola"]}"#;
 
@@ -49,6 +132,16 @@ fn rejects_command_for_non_run_action() {
 
     assert_eq!(error.code(), "command_only_allowed_for_run");
     assert_eq!(error.to_string(), "command can only be used with run action");
+}
+
+#[test]
+fn rejects_resource_for_run_action() {
+    let input = r#"{"action":"run","resource":"echo hola"}"#;
+
+    let error = json_api::request_from_json(input).expect_err("request should fail");
+
+    assert_eq!(error.code(), "resource_not_allowed_for_run");
+    assert_eq!(error.to_string(), "run action cannot use resource; use command instead");
 }
 
 // ─── < Tests: Output > ──────────────────────────────────────────────
