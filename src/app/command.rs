@@ -34,7 +34,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
 // ─── < Command Handlers > ───────────────────────────────────────────
 
 fn handle_init_command() -> Result<i32> {
-    let result = config::init_default_config().context("could not initialize ARC config")?;
+    let result = config::init_default_config().context("could not initialize ARC Rego policy")?;
 
     output::print_config_init_result(&result);
 
@@ -42,23 +42,17 @@ fn handle_init_command() -> Result<i32> {
 }
 
 fn handle_config_path_command() -> Result<i32> {
-    if let Some(path) = config::resolve_config_path() {
-        output::print_config_path(&path);
+    let source = config::runtime_config_source_path();
 
-        return Ok(0);
-    }
+    output::print_config_path(&source);
 
-    let default_path = config::default_user_config_path().context("could not resolve default config path")?;
-
-    output::print_config_path_missing(&default_path);
-
-    Ok(1)
+    Ok(0)
 }
 
 fn handle_config_check_command() -> Result<i32> {
     match config::load_from_default_locations() {
-        Ok((_loaded_config, path)) => {
-            output::print_config_check_success(&path);
+        Ok((_loaded_config, source)) => {
+            output::print_config_check_success(&source);
             Ok(0)
         }
         Err(error) => {
@@ -69,9 +63,9 @@ fn handle_config_check_command() -> Result<i32> {
 }
 
 fn handle_config_show_command() -> Result<i32> {
-    let (loaded_config, path) = config::load_from_default_locations().context("could not load ARC config")?;
+    let (loaded_config, source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
 
-    output::print_config(&loaded_config, &path);
+    output::print_config(&loaded_config, &source);
 
     Ok(0)
 }
@@ -92,7 +86,7 @@ fn handle_decide_json_command() -> Result<i32> {
         }
     };
 
-    let (loaded_config, _path) = config::load_from_default_locations().context("could not load ARC config")?;
+    let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
     let source = audit::resolve_source("json_api", &loaded_config.agents)?;
 
     audit::prepare(&loaded_config.audit)?;
@@ -116,7 +110,7 @@ fn handle_tui_command() -> Result<i32> {
 }
 
 fn handle_policy_request(request: Request) -> Result<i32> {
-    let (loaded_config, _path) = config::load_from_default_locations().context("could not load ARC config")?;
+    let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
     let source = audit::resolve_source("cli", &loaded_config.agents)?;
 
     audit::prepare(&loaded_config.audit)?;

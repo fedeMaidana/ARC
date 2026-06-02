@@ -7,30 +7,16 @@ use super::ConfigError;
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn resolve_config_path() -> Option<PathBuf> {
-    if let Ok(path) = env::var("ARC_CONFIG") {
-        return Some(PathBuf::from(path));
-    }
-
-    let local_path = PathBuf::from("arc.toml");
-
-    if local_path.exists() {
-        return Some(local_path);
-    }
-
-    let Ok(global_path) = default_user_config_path() else {
-        return None;
-    };
-
-    if global_path.exists() {
-        return Some(global_path);
-    }
-
-    None
+pub fn runtime_config_source_path() -> PathBuf {
+    PathBuf::from("runtime defaults + ARC_* environment")
 }
 
-pub fn default_user_config_path() -> Result<PathBuf, ConfigError> {
+pub fn default_user_policies_dir() -> Result<PathBuf, ConfigError> {
     let home = env::var("HOME").map_err(|source| ConfigError::MissingHome { source })?;
 
-    Ok(PathBuf::from(home).join(".config").join("arc").join("arc.toml"))
+    Ok(PathBuf::from(home).join(".config").join("arc").join("policies.d"))
+}
+
+pub fn default_user_policy_path() -> Result<PathBuf, ConfigError> {
+    Ok(default_user_policies_dir()?.join("arc.rego"))
 }

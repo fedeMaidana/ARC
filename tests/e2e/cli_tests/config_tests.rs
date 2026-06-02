@@ -1,11 +1,11 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use super::common::{TestFixture, assert_success, invalid_config_content, stdout};
+use super::common::{TestFixture, assert_success, stdout};
 
 // ─── < Tests > ──────────────────────────────────────────────────────
 
 #[test]
-fn config_show_prints_loaded_config() {
+fn config_show_prints_runtime_config() {
     let fixture = TestFixture::new("config-show");
     let output = fixture.run(&["config", "show"]);
 
@@ -14,6 +14,10 @@ fn config_show_prints_loaded_config() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("Config"));
+    assert!(stdout.contains("source:"));
+    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+    assert!(stdout.contains("Policy"));
+    assert!(stdout.contains("Agents"));
     assert!(stdout.contains("Actions"));
     assert!(stdout.contains("Console"));
     assert!(stdout.contains("Execution"));
@@ -23,7 +27,7 @@ fn config_show_prints_loaded_config() {
 }
 
 #[test]
-fn config_path_prints_config_path_from_environment() {
+fn config_path_prints_runtime_config_source() {
     let fixture = TestFixture::new("config-path");
     let output = fixture.run(&["config", "path"]);
 
@@ -31,12 +35,12 @@ fn config_path_prints_config_path_from_environment() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Config path"));
-    assert!(stdout.contains(fixture.config_path.to_string_lossy().as_ref()));
+    assert!(stdout.contains("Config source"));
+    assert!(stdout.contains("runtime defaults + ARC_* environment"));
 }
 
 #[test]
-fn config_check_prints_success_for_valid_config() {
+fn config_check_prints_success_for_runtime_config() {
     let fixture = TestFixture::new("config-check-valid");
     let output = fixture.run(&["config", "check"]);
 
@@ -44,13 +48,13 @@ fn config_check_prints_success_for_valid_config() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Config is valid"));
-    assert!(stdout.contains(fixture.config_path.to_string_lossy().as_ref()));
+    assert!(stdout.contains("Runtime config is valid"));
+    assert!(stdout.contains("runtime defaults + ARC_* environment"));
 }
 
 #[test]
-fn config_check_prints_validation_errors_for_invalid_config() {
-    let fixture = TestFixture::with_config_content("config-check-invalid", invalid_config_content());
+fn config_check_prints_validation_errors_for_invalid_runtime_config() {
+    let fixture = TestFixture::with_env("config-check-invalid", "ARC_POLICY_ENGINE", "magic");
     let output = fixture.run(&["config", "check"]);
 
     assert_eq!(output.status.code(), Some(2));
@@ -58,8 +62,6 @@ fn config_check_prints_validation_errors_for_invalid_config() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("Config error"));
-    assert!(stdout.contains("console.commands[git].mode"));
-    assert!(stdout.contains("unsupported value \"alow\""));
-    assert!(stdout.contains("http.blocked_cidrs[0]"));
-    assert!(stdout.contains("invalid CIDR \"192.168/33\""));
+    assert!(stdout.contains("policy.engine"));
+    assert!(stdout.contains("unsupported value \"magic\""));
 }

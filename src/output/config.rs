@@ -13,38 +13,31 @@ use super::shared::print_list;
 pub fn print_config_init_result(result: &ConfigInitResult) {
     match result {
         ConfigInitResult::Created(path) => {
-            println!("{}", ui::green("✅ Config created"));
+            println!("{}", ui::green("✅ Rego policy created"));
             println!("  {} {}", ui::dim("path:"), path.display());
         }
         ConfigInitResult::AlreadyExists(path) => {
-            println!("{}", ui::yellow("⚠️  Config already exists"));
+            println!("{}", ui::yellow("⚠️  Rego policy already exists"));
             println!("  {} {}", ui::dim("path:"), path.display());
         }
     }
 }
 
 pub fn print_config_path(path: &Path) {
-    println!("{}", ui::section("Config path"));
+    println!("{}", ui::section("Config source"));
     println!("  {}", path.display());
 }
 
-pub fn print_config_path_missing(default_path: &Path) {
-    println!("{}", ui::yellow("⚠️  Config not found"));
-    println!("  {} {}", ui::dim("default path:"), default_path.display());
-    println!();
-    println!("{}", ui::dim("Run: arc init"));
-}
-
 pub fn print_config_check_success(path: &Path) {
-    println!("{}", ui::green("✅ Config is valid"));
-    println!("  {} {}", ui::dim("path:"), path.display());
+    println!("{}", ui::green("✅ Runtime config is valid"));
+    println!("  {} {}", ui::dim("source:"), path.display());
 }
 
 pub fn print_config_check_error(error: &ConfigError) {
     println!("{}", ui::red("❌ Config error"));
 
     match error {
-        ConfigError::Validation { source, .. } => {
+        ConfigError::Validation { source } => {
             for issue in source.issues() {
                 println!("  {issue}");
             }
@@ -61,7 +54,7 @@ pub fn print_config_check_error(error: &ConfigError) {
 
 pub fn print_config(config: &Config, path: &Path) {
     println!("{}", ui::section("Config"));
-    println!("  {} {}", ui::dim("path:"), path.display());
+    println!("  {} {}", ui::dim("source:"), path.display());
     println!("  {} {}", ui::dim("version:"), config.config_version);
     println!();
 

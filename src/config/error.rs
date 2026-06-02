@@ -10,29 +10,18 @@ use super::validation::ConfigValidationError;
 
 #[derive(Debug, Error)]
 pub enum ConfigError {
-    #[error("failed to read config file '{path}'")]
-    Read {
-        path: String,
-        #[source]
-        source: std::io::Error,
+    #[error("invalid environment variable {name}={value:?}; expected {expected}")]
+    InvalidEnvironmentValue {
+        name: String,
+        value: String,
+        expected: &'static str,
     },
 
-    #[error("failed to parse config file '{path}'")]
-    Parse {
-        path: String,
-        #[source]
-        source: toml::de::Error,
-    },
-
-    #[error("config validation failed for '{path}'")]
+    #[error("runtime config validation failed")]
     Validation {
-        path: String,
         #[source]
         source: ConfigValidationError,
     },
-
-    #[error("config file not found.\n\nRun:\n  arc init\n\nOr provide one manually:\n  ARC_CONFIG=/path/to/arc.toml arc run ls -la")]
-    NotFound,
 
     #[error("failed to find HOME environment variable")]
     MissingHome {
@@ -46,13 +35,15 @@ pub enum ConfigError {
     #[error("failed to create config directory '{path}'")]
     CreateDir {
         path: String,
+
         #[source]
         source: std::io::Error,
     },
 
-    #[error("failed to write config file '{path}'")]
+    #[error("failed to write policy file '{path}'")]
     Write {
         path: String,
+
         #[source]
         source: std::io::Error,
     },
