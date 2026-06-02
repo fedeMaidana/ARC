@@ -28,7 +28,7 @@ fn parses_settings_path_command() {
 
     let result = CliCommand::from_args(&args);
 
-    assert!(matches!(result, Ok(CliCommand::ConfigPath)));
+    assert!(matches!(result, Ok(CliCommand::SettingsPath)));
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn parses_settings_check_command() {
 
     let result = CliCommand::from_args(&args);
 
-    assert!(matches!(result, Ok(CliCommand::ConfigCheck)));
+    assert!(matches!(result, Ok(CliCommand::SettingsCheck)));
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn parses_settings_show_command() {
 
     let result = CliCommand::from_args(&args);
 
-    assert!(matches!(result, Ok(CliCommand::ConfigShow)));
+    assert!(matches!(result, Ok(CliCommand::SettingsShow)));
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn parses_config_path_compatibility_alias() {
 
     let result = CliCommand::from_args(&args);
 
-    assert!(matches!(result, Ok(CliCommand::ConfigPath)));
+    assert!(matches!(result, Ok(CliCommand::SettingsPath)));
 }
 
 #[test]
@@ -64,7 +64,16 @@ fn parses_config_check_compatibility_alias() {
 
     let result = CliCommand::from_args(&args);
 
-    assert!(matches!(result, Ok(CliCommand::ConfigCheck)));
+    assert!(matches!(result, Ok(CliCommand::SettingsCheck)));
+}
+
+#[test]
+fn parses_config_show_compatibility_alias() {
+    let args = vec!["arc".to_string(), "config".to_string(), "show".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    assert!(matches!(result, Ok(CliCommand::SettingsShow)));
 }
 
 #[test]
@@ -119,6 +128,15 @@ fn returns_error_when_check_has_no_action() {
 #[test]
 fn returns_error_when_settings_has_no_subcommand() {
     let args = vec!["arc".to_string(), "settings".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    assert!(matches!(result, Err(CliError::MissingRuntimeSettingsCommand)));
+}
+
+#[test]
+fn returns_error_when_config_alias_has_no_subcommand() {
+    let args = vec!["arc".to_string(), "config".to_string()];
 
     let result = CliCommand::from_args(&args);
 

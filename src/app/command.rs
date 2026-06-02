@@ -20,10 +20,10 @@ use super::json;
 pub fn handle(command: CliCommand) -> Result<i32> {
     match command {
         CliCommand::Init => handle_init_command(),
-        CliCommand::ConfigPath => handle_config_path_command(),
-        CliCommand::ConfigCheck => handle_config_check_command(),
-        CliCommand::ConfigShow => handle_config_show_command(),
-        CliCommand::ConfigHelp => handle_config_help_command(),
+        CliCommand::SettingsPath => handle_settings_path_command(),
+        CliCommand::SettingsCheck => handle_settings_check_command(),
+        CliCommand::SettingsShow => handle_settings_show_command(),
+        CliCommand::SettingsHelp => handle_settings_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
         CliCommand::Tui => handle_tui_command(),
         CliCommand::PolicyRequest(request) => handle_policy_request(request),
@@ -41,7 +41,7 @@ fn handle_init_command() -> Result<i32> {
     Ok(0)
 }
 
-fn handle_config_path_command() -> Result<i32> {
+fn handle_settings_path_command() -> Result<i32> {
     let source = config::runtime_config_source_path();
 
     output::print_config_path(&source);
@@ -49,7 +49,7 @@ fn handle_config_path_command() -> Result<i32> {
     Ok(0)
 }
 
-fn handle_config_check_command() -> Result<i32> {
+fn handle_settings_check_command() -> Result<i32> {
     match config::load_from_default_locations() {
         Ok((_loaded_config, source)) => {
             output::print_config_check_success(&source);
@@ -62,7 +62,7 @@ fn handle_config_check_command() -> Result<i32> {
     }
 }
 
-fn handle_config_show_command() -> Result<i32> {
+fn handle_settings_show_command() -> Result<i32> {
     let (loaded_config, source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
 
     output::print_config(&loaded_config, &source);
@@ -70,7 +70,7 @@ fn handle_config_show_command() -> Result<i32> {
     Ok(0)
 }
 
-fn handle_config_help_command() -> Result<i32> {
+fn handle_settings_help_command() -> Result<i32> {
     output::print_config_usage();
 
     Ok(2)

@@ -28,10 +28,10 @@ pub enum CliError {
 
 pub enum CliCommand {
     Init,
-    ConfigPath,
-    ConfigCheck,
-    ConfigShow,
-    ConfigHelp,
+    SettingsPath,
+    SettingsCheck,
+    SettingsShow,
+    SettingsHelp,
     DecideJson,
     Tui,
     PolicyRequest(Request),
@@ -62,10 +62,10 @@ impl CliCommand {
         }
 
         match args[2].as_str() {
-            "path" => Ok(Self::ConfigPath),
-            "check" => Ok(Self::ConfigCheck),
-            "show" => Ok(Self::ConfigShow),
-            "help" | "-h" | "--help" => Ok(Self::ConfigHelp),
+            "path" => Ok(Self::SettingsPath),
+            "check" => Ok(Self::SettingsCheck),
+            "show" => Ok(Self::SettingsShow),
+            "help" | "-h" | "--help" => Ok(Self::SettingsHelp),
             command => Err(CliError::UnknownRuntimeSettingsCommand {
                 command: command.to_string(),
             }),
