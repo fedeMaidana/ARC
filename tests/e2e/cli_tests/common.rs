@@ -11,11 +11,15 @@ use serde_json::Value;
 // ─── < Public Helpers: Commands > ───────────────────────────────────
 
 pub fn run_arc(args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_arc"))
+    let mut command = Command::new(env!("CARGO_BIN_EXE_arc"));
+
+    command
         .args(args)
         .env("ARC_AUDIT_ENABLED", "false")
-        .output()
-        .expect("failed to execute arc binary")
+        .env_remove("ARC_AGENT_SOURCES")
+        .env_remove("ARC_SOURCE");
+
+    command.output().expect("failed to execute arc binary")
 }
 
 pub struct TestFixture {
@@ -76,6 +80,8 @@ impl TestFixture {
             .env("ARC_AUDIT_ENABLED", "false")
             .env("ARC_POLICY_ENGINE", "native")
             .env("ARC_EXECUTION_WORKING_DIRECTORY", ".")
+            .env_remove("ARC_AGENT_SOURCES")
+            .env_remove("ARC_SOURCE")
             .current_dir(&self.root_dir);
 
         for (key, value) in &self.env_overrides {

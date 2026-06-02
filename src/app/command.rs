@@ -2,8 +2,8 @@
 
 use anyhow::{Context, Result};
 
-use crate::cli::CliCommand;
-use crate::config;
+use crate::cli::{AgentEnvRequest, CliCommand};
+use crate::config::{self, AgentSourceConfig};
 use crate::executor;
 use crate::json_api;
 use crate::output;
@@ -24,6 +24,9 @@ pub fn handle(command: CliCommand) -> Result<i32> {
         CliCommand::SettingsCheck => handle_settings_check_command(),
         CliCommand::SettingsShow => handle_settings_show_command(),
         CliCommand::SettingsHelp => handle_settings_help_command(),
+        CliCommand::AgentsList => handle_agents_list_command(),
+        CliCommand::AgentsEnv(request) => handle_agents_env_command(request),
+        CliCommand::AgentsHelp => handle_agents_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
         CliCommand::Tui => handle_tui_command(),
         CliCommand::PolicyRequest(request) => handle_policy_request(request),
@@ -72,6 +75,34 @@ fn handle_settings_show_command() -> Result<i32> {
 
 fn handle_settings_help_command() -> Result<i32> {
     output::print_settings_usage();
+
+    Ok(2)
+}
+
+fn handle_agents_list_command() -> Result<i32> {
+    let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
+
+    output::print_agents(&loaded_config);
+
+    Ok(0)
+}
+
+fn handle_agents_env_command(request: AgentEnvRequest) -> Result<i32> {
+    let source = AgentSourceConfig {
+        id: request.id,
+        display_name: request.display_name,
+        enabled: request.enabled,
+        kind: request.kind,
+        description: request.description,
+    };
+
+    output::print_agent_env_exports(&source);
+
+    Ok(0)
+}
+
+fn handle_agents_help_command() -> Result<i32> {
+    output::print_agents_usage();
 
     Ok(2)
 }

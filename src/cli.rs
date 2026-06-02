@@ -4,6 +4,12 @@ use thiserror::Error;
 
 use crate::request::{Request, RequestMode};
 
+// ─── < Constants > ──────────────────────────────────────────────────
+
+const DEFAULT_AGENT_KIND: &str = "local_agent";
+const SUPPORTED_AGENT_KINDS: &[&str] = &["local_cli", "local_agent", "custom"];
+const RESERVED_AGENT_SOURCE_IDS: &[&str] = &["cli", "json_api"];
+
 // ─── < Errors > ─────────────────────────────────────────────────────
 
 #[derive(Debug, Error)]
@@ -17,11 +23,49 @@ pub enum CliError {
     #[error("unknown runtime settings command '{command}'")]
     UnknownRuntimeSettingsCommand { command: String },
 
+    #[error("missing agent command")]
+    MissingAgentCommand,
+
+    #[error("unknown agent command '{command}'")]
+    UnknownAgentCommand { command: String },
+
+    #[error("missing agent source id")]
+    MissingAgentSourceId,
+
+    #[error("missing value for agent option '{option}'")]
+    MissingAgentOptionValue { option: String },
+
+    #[error("unknown agent option '{option}'")]
+    UnknownAgentOption { option: String },
+
+    #[error("invalid agent source id '{source_id}'; use lowercase letters, numbers, '.', '_' or '-'")]
+    InvalidAgentSourceId { source_id: String },
+
+    #[error("agent source id '{source_id}' is reserved by ARC")]
+    ReservedAgentSourceId { source_id: String },
+
+    #[error("invalid agent kind '{kind}'; expected one of: local_cli, local_agent, custom")]
+    InvalidAgentKind { kind: String },
+
+    #[error("invalid {field}; values cannot contain '|' or ';'")]
+    InvalidAgentEnvironmentField { field: &'static str },
+
     #[error("missing decide command format")]
     MissingDecideFormat,
 
     #[error("unknown decide option '{option}'")]
     UnknownDecideOption { option: String },
+}
+
+// ─── < Structs > ────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AgentEnvRequest {
+    pub id: String,
+    pub display_name: String,
+    pub kind: String,
+    pub enabled: bool,
+    pub description: Option<String>,
 }
 
 // ─── < Enums > ──────────────────────────────────────────────────────
@@ -32,6 +76,9 @@ pub enum CliCommand {
     SettingsCheck,
     SettingsShow,
     SettingsHelp,
+    AgentsList,
+    AgentsEnv(AgentEnvRequest),
+    AgentsHelp,
     DecideJson,
     Tui,
     PolicyRequest(Request),
@@ -50,6 +97,7 @@ impl CliCommand {
             "help" | "-h" | "--help" => Ok(Self::Help),
             "init" => Ok(Self::Init),
             "settings" | "config" => Self::parse_runtime_settings_command(args),
+            "agents" => Self::parse_agents_command(args),
             "decide" => Self::parse_decide_command(args),
             "monitor" | "tui" => Ok(Self::Tui),
             _ => Self::parse_policy_request(args),
@@ -70,6 +118,82 @@ impl CliCommand {
                 command: command.to_string(),
             }),
         }
+    }
+
+    fn parse_agents_command(args: &[String]) -> Result<Self, CliError> {
+        if args.len() < 3 {
+            return Err(CliError::MissingAgentCommand);
+        }
+
+        match args[2].as_str() {
+            "list" => Ok(Self::AgentsList),
+            "env" => Self::parse_agents_env_command(args),
+            "help" | "-h" | "--help" => Ok(Self::AgentsHelp),
+            command => Err(CliError::UnknownAgentCommand {
+                command: command.to_string(),
+            }),
+        }
+    }
+
+    fn parse_agents_env_command(args: &[String]) -> Result<Self, CliError> {
+        if args.len() < 4 {
+            return Err(CliError::MissingAgentSourceId);
+        }
+
+        let id = args[3].trim().to_string();
+
+        validate_agent_source_id(&id)?;
+
+        let mut request = AgentEnvRequest {
+            display_name: display_name_from_source_id(&id),
+            id,
+            kind: DEFAULT_AGENT_KIND.to_string(),
+            enabled: true,
+            description: None,
+        };
+
+        let mut index = 4;
+
+        while index < args.len() {
+            match args[index].as_str() {
+                "--name" => {
+                    let value = required_agent_option_value(args, index, "--name")?;
+                    validate_environment_field("agent source display name", &value)?;
+
+                    request.display_name = value;
+                    index += 2;
+                }
+                "--kind" => {
+                    let value = required_agent_option_value(args, index, "--kind")?;
+                    validate_agent_kind(&value)?;
+
+                    request.kind = value;
+                    index += 2;
+                }
+                "--description" => {
+                    let value = required_agent_option_value(args, index, "--description")?;
+                    validate_environment_field("agent source description", &value)?;
+
+                    request.description = Some(value);
+                    index += 2;
+                }
+                "--disabled" => {
+                    request.enabled = false;
+                    index += 1;
+                }
+                "--enabled" => {
+                    request.enabled = true;
+                    index += 1;
+                }
+                option => {
+                    return Err(CliError::UnknownAgentOption {
+                        option: option.to_string(),
+                    });
+                }
+            }
+        }
+
+        Ok(Self::AgentsEnv(request))
     }
 
     fn parse_decide_command(args: &[String]) -> Result<Self, CliError> {
@@ -116,4 +240,80 @@ fn parse_request(args: &[String]) -> Result<Request, CliError> {
     };
 
     Ok(Request::new(mode, args[action_index].clone(), command_parts))
+}
+
+fn required_agent_option_value(args: &[String], option_index: usize, option: &str) -> Result<String, CliError> {
+    let value = args
+        .get(option_index + 1)
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| CliError::MissingAgentOptionValue {
+            option: option.to_string(),
+        })?;
+
+    Ok(value)
+}
+
+fn validate_agent_source_id(source_id: &str) -> Result<(), CliError> {
+    if RESERVED_AGENT_SOURCE_IDS.contains(&source_id) {
+        return Err(CliError::ReservedAgentSourceId {
+            source_id: source_id.to_string(),
+        });
+    }
+
+    if !is_valid_agent_source_id(source_id) {
+        return Err(CliError::InvalidAgentSourceId {
+            source_id: source_id.to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+fn validate_agent_kind(kind: &str) -> Result<(), CliError> {
+    if SUPPORTED_AGENT_KINDS.contains(&kind) {
+        return Ok(());
+    }
+
+    Err(CliError::InvalidAgentKind { kind: kind.to_string() })
+}
+
+fn validate_environment_field(field: &'static str, value: &str) -> Result<(), CliError> {
+    if value.contains('|') || value.contains(';') {
+        return Err(CliError::InvalidAgentEnvironmentField { field });
+    }
+
+    Ok(())
+}
+
+fn is_valid_agent_source_id(value: &str) -> bool {
+    !value.is_empty()
+        && value
+            .chars()
+            .all(|character| character.is_ascii_lowercase() || character.is_ascii_digit() || matches!(character, '-' | '_' | '.'))
+}
+
+fn display_name_from_source_id(source_id: &str) -> String {
+    let words: Vec<String> = source_id
+        .split(['-', '_', '.'])
+        .filter(|part| !part.is_empty())
+        .map(capitalize_ascii_word)
+        .collect();
+
+    if words.is_empty() { source_id.to_string() } else { words.join(" ") }
+}
+
+fn capitalize_ascii_word(word: &str) -> String {
+    let mut chars = word.chars();
+
+    let Some(first) = chars.next() else {
+        return String::new();
+    };
+
+    let mut capitalized = String::new();
+
+    capitalized.extend(first.to_uppercase());
+    capitalized.push_str(chars.as_str());
+
+    capitalized
 }
