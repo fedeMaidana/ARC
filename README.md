@@ -149,6 +149,14 @@ Ask ARC for a JSON decision:
 echo '{"action":"run","command":["echo","hola"]}' | arc decide --json
 ```
 
+Open the interactive monitor:
+
+```bash
+arc monitor
+```
+
+`arc tui` is also supported as a technical alias.
+
 View recent audit events:
 
 ```bash
@@ -168,15 +176,15 @@ arc run echo hola
 Example output:
 
 ```txt
-🛡️  ARC v0.2.1
-────────────────
+🛡️  ARC
+────────
 
 ▶ Decision
   action:   run
   resource: echo hola
   result:   ✅ allow
   risk:     low
-  reason:   action is allowed
+  reason:   request matches an allowed policy
 
 ▶ Execution
   running: echo hola
@@ -238,7 +246,7 @@ Possible result:
 ```txt
 result:   ⛔ deny
 risk:     critical
-reason:   console command is blocked
+reason:   command is explicitly blocked by console policy
 ```
 
 ---
@@ -296,7 +304,159 @@ That one is not a debate. That one gets shown the door.
 
 ## JSON API
 
-ARC can receive requests as JSON. This is useful for agents, tools, and automation scripts.
+ARC can receive requests as JSON. This is useful for agents, tools, editor integrations, and automation scripts.
+
+The main JSON command is:
+
+```bash
+arc decide --json
+```
+
+It reads a JSON request from `stdin`, prints a JSON response to `stdout`, and exits with a machine-readable status code.
+
+Example:
+
+```bash
+echo '{"action":"run","command":["echo","hola"]}' | arc decide --json
+```
+
+During development:
+
+```bash
+echo '{"action":"run","command":["echo","hola"]}' | cargo run -q -- decide --json
+```
+
+### Important behavior
+
+`arc decide --json` is **decision-only**.
+
+It does not execute commands directly. It checks what ARC would decide and returns a structured response.
+
+That makes it safe to use from agents before execution.
+
+### Request format
+
+There are two supported request shapes.
+
+#### Run command request
+
+Use this shape when asking about a shell command:
+
+```json
+{
+  "action": "run",
+  "command": ["echo", "hola"]
+}
+```
+
+Rules:
+
+```txt
+action  -> required
+command -> required for action "run"
+resource -> not allowed for action "run"
+```
+
+`command` must be a non-empty array of non-empty strings.
+
+Good:
+
+```json
+{
+  "action": "run",
+  "command": ["git", "status"]
+}
+```
+
+Rejected:
+
+```json
+{
+  "action": "run",
+  "command": []
+}
+```
+
+Rejected:
+
+```json
+{
+  "action": "run",
+  "command": ["echo", ""]
+}
+```
+
+Rejected:
+
+```json
+{
+  "action": "run",
+  "resource": "echo hola"
+}
+```
+
+#### Resource request
+
+Use this shape when asking about an action that targets a resource, such as an HTTP URL:
+
+```json
+{
+  "action": "http_get",
+  "resource": "https://example.com"
+}
+```
+
+Rules:
+
+```txt
+action -> required
+resource -> optional, but required by some policies
+command -> only allowed for action "run"
+```
+
+Rejected:
+
+```json
+{
+  "action": "http_get",
+  "command": ["echo", "hola"]
+}
+```
+
+### Strict input validation
+
+The JSON API is intentionally strict.
+
+ARC rejects:
+
+```txt
+unknown fields
+missing action
+empty action
+empty resource
+missing command for run
+empty command array
+empty command parts
+command field on non-run actions
+resource field on run actions
+invalid JSON
+```
+
+Unknown fields are rejected to avoid silently accepting malformed agent requests.
+
+Rejected:
+
+```json
+{
+  "action": "run",
+  "command": ["echo", "hola"],
+  "unexpected": true
+}
+```
+
+### Successful response
+
+Example request:
 
 ```bash
 echo '{"action":"run","command":["echo","hola"]}' | arc decide --json
@@ -307,6 +467,8 @@ Example response:
 ```json
 {
   "ok": true,
+  "api_version": "1",
+  "kind": "decision",
   "request": {
     "mode": "check",
     "action": "run",
@@ -314,7 +476,8 @@ Example response:
   },
   "decision": {
     "status": "allow",
-    "reason": "action is allowed",
+    "reason": "request matches an allowed policy",
+    "reason_code": "action_allowed",
     "risk": "low"
   },
   "execution": {
@@ -326,7 +489,184 @@ Example response:
 }
 ```
 
-The JSON API is decision-only. It does not execute commands directly.
+### Error response
+
+Example invalid request:
+
+```bash
+echo '{"action":"run"}' | arc decide --json
+```
+
+Example response:
+
+```json
+{
+  "ok": false,
+  "api_version": "1",
+  "kind": "error",
+  "error_code": "missing_command",
+  "error": "run action requires a command array"
+}
+```
+
+### Response fields
+
+Every successful decision response contains:
+
+```txt
+ok           -> true
+api_version  -> JSON API version
+kind         -> "decision"
+request      -> normalized request ARC evaluated
+decision     -> policy decision
+execution    -> execution metadata
+```
+
+Every error response contains:
+
+```txt
+ok           -> false
+api_version  -> JSON API version
+kind         -> "error"
+error_code   -> stable machine-readable error code
+error        -> human-readable error message
+```
+
+### Decision object
+
+```json
+{
+  "status": "allow",
+  "reason": "request matches an allowed policy",
+  "reason_code": "action_allowed",
+  "risk": "low"
+}
+```
+
+Supported decision statuses:
+
+```txt
+allow
+deny
+ask
+```
+
+Supported risk levels:
+
+```txt
+low
+medium
+high
+critical
+```
+
+`reason_code` is intended for agents and scripts.
+
+Example reason codes:
+
+```txt
+action_allowed
+action_blocked
+action_requires_approval
+action_allowed_by_default
+action_requires_approval_by_default
+resource_required
+console_command_required
+console_command_blocked
+console_command_not_allowed
+console_command_requires_approval
+console_subcommand_required
+console_subcommand_blocked
+console_subcommand_not_allowed
+console_subcommand_requires_approval
+console_argument_blocked
+console_argument_requires_approval
+resource_protected
+path_blocked
+invalid_http_url
+http_target_blocked
+action_not_configured
+```
+
+### Execution object
+
+For `arc decide --json`, execution usually looks like this:
+
+```json
+{
+  "kind": "check_mode",
+  "allowed": true,
+  "executed": false,
+  "exit_code": 0
+}
+```
+
+`executed` should be `false` for JSON decisions.
+
+Execution kinds include:
+
+```txt
+check_mode
+skipped_denied
+ask_required
+ask_declined
+no_execution_needed
+missing_command
+command_finished
+command_timed_out
+command_failed
+```
+
+### Exit codes
+
+`arc decide --json` uses exit codes that agents can rely on:
+
+```txt
+0 -> valid request, decision allows or asks
+1 -> valid request, decision denies
+2 -> invalid request or application/config error
+```
+
+Examples:
+
+```bash
+echo '{"action":"run","command":["echo","hola"]}' | arc decide --json
+echo $?
+```
+
+```txt
+0
+```
+
+```bash
+echo '{"action":"run","command":["rm","-rf","/"]}' | arc decide --json
+echo $?
+```
+
+```txt
+1
+```
+
+```bash
+echo '{"action":"run"}' | arc decide --json
+echo $?
+```
+
+```txt
+2
+```
+
+### Stable contract
+
+The JSON API currently uses:
+
+```txt
+api_version: "1"
+```
+
+The goal is to keep this contract stable for agents.
+
+Breaking changes should require a new `api_version`.
 
 ---
 
@@ -349,6 +689,9 @@ arc config path
 Minimal example:
 
 ```toml
+[policy]
+default_action = "deny"
+
 [actions]
 allowed = ["run", "http_get"]
 blocked = []
@@ -360,6 +703,23 @@ protected = [".env", "id_rsa", "secrets.txt"]
 blocked_path_prefixes = ["/etc/", "/root/"]
 
 [http]
+allowed_schemes = ["http", "https"]
+block_localhost = true
+block_private_networks = true
+block_link_local = true
+block_metadata_services = true
+blocked_hosts = ["localhost"]
+blocked_cidrs = [
+  "0.0.0.0/8",
+  "10.0.0.0/8",
+  "127.0.0.0/8",
+  "169.254.0.0/16",
+  "172.16.0.0/12",
+  "192.168.0.0/16",
+  "::1/128",
+  "fc00::/7",
+  "fe80::/10"
+]
 blocked_targets = [
   "http://localhost",
   "https://localhost",
@@ -368,6 +728,8 @@ blocked_targets = [
 ]
 
 [console]
+default_command_policy = "deny"
+allow_path_resolution = true
 allowed_commands = ["cargo", "git", "rg", "ls", "pwd", "cat", "echo", "whoami", "date"]
 blocked_commands = ["rm", "sudo", "su", "sh", "bash", "zsh", "curl", "wget", "ssh", "scp"]
 blocked_arguments = ["-rf", "--no-preserve-root", "/", "/etc", "/root", "..", "~"]
@@ -380,6 +742,8 @@ path = "~/.local/share/arc/audit.log"
 [execution]
 timeout_seconds = 10
 max_output_bytes = 100000
+inherit_environment = false
+environment = []
 ```
 
 ---
@@ -410,7 +774,7 @@ Example event:
   "action": "run",
   "resource": "echo hola",
   "decision": "allow",
-  "reason": "action is allowed",
+  "reason": "request matches an allowed policy",
   "risk": "low",
   "executed": true,
   "exit_code": 0,
@@ -473,7 +837,7 @@ Example blocked command:
 Command: curl --version
 Decision: deny
 Risk: critical
-Reason: console command is blocked
+Reason: command is explicitly blocked by console policy
 ```
 
 This integration proves ARC can sit between a real agent and shell execution, but it is still experimental.
@@ -486,8 +850,6 @@ OpenCode tool dependencies are isolated inside `.opencode`:
 .opencode/
   tools/
     bash.ts
-  package.json
-  bun.lock
   bunfig.toml
   tsconfig.json
 ```
@@ -514,13 +876,13 @@ node_modules/
 Run formatting:
 
 ```bash
-cargo fmt
+cargo fmt --all
 ```
 
 Run Clippy:
 
 ```bash
-cargo clippy -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 Run tests:
@@ -532,9 +894,10 @@ cargo nextest run
 Run all checks:
 
 ```bash
-cargo fmt
-cargo clippy -- -D warnings
-cargo nextest run
+cargo fmt --all \
+&& cargo fmt --all --check \
+&& cargo clippy --workspace --all-targets -- -D warnings \
+&& cargo nextest run
 ```
 
 Tests are organized outside `src`:
