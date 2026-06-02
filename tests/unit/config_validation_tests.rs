@@ -42,12 +42,15 @@ fn rejects_unsupported_config_version() {
 fn rejects_unsupported_policy_values() {
     let mut config = default_config();
 
+    config.policy.engine = "rego".to_string();
     config.policy.default_action = "permit".to_string();
     config.console.default_command_policy = "maybe".to_string();
 
     assert_validation_error(
         &config,
         &[
+            "policy.engine: unsupported value \"rego\"",
+            "expected one of: native",
             "policy.default_action: unsupported value \"permit\"",
             "console.default_command_policy: unsupported value \"maybe\"",
         ],
@@ -198,6 +201,7 @@ fn default_config() -> Config {
     Config {
         config_version: 1,
         policy: PolicyConfig {
+            engine: "native".to_string(),
             default_action: "deny".to_string(),
         },
         agents: AgentsConfig {

@@ -13,6 +13,7 @@ pub fn default_config() -> Config {
     Config {
         config_version: 1,
         policy: PolicyConfig {
+            engine: "native".to_string(),
             default_action: "deny".to_string(),
         },
         agents: AgentsConfig::default(),

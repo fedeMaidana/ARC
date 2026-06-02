@@ -17,5 +17,8 @@ pub trait PolicyEngine {
 // ─── < Public Functions > ───────────────────────────────────────────
 
 pub fn decide(request: &Request, config: &Config) -> Decision {
-    NativePolicyEngine::new().decide(PolicyInput::new(request, config)).into_decision()
+    match config.policy.engine.as_str() {
+        "native" => NativePolicyEngine::new().decide(PolicyInput::new(request, config)).into_decision(),
+        _ => NativePolicyEngine::new().decide(PolicyInput::new(request, config)).into_decision(),
+    }
 }

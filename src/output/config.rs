@@ -66,6 +66,7 @@ pub fn print_config(config: &Config, path: &Path) {
     println!();
 
     println!("{}", ui::section("Policy"));
+    println!("  {} {}", ui::bold("engine"), config.policy.engine);
     println!("  {} {}", ui::bold("default action"), config.policy.default_action);
 
     println!("{}", ui::section("Agents"));

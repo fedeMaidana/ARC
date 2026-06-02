@@ -29,6 +29,9 @@ pub struct Config {
 
 #[derive(Debug, Deserialize)]
 pub struct PolicyConfig {
+    #[serde(default = "default_policy_engine")]
+    pub engine: String,
+
     #[serde(default = "default_policy_action")]
     pub default_action: String,
 }
@@ -194,6 +197,7 @@ pub struct ExecutionEnvironmentVariable {
 impl Default for PolicyConfig {
     fn default() -> Self {
         Self {
+            engine: default_policy_engine(),
             default_action: default_policy_action(),
         }
     }
@@ -233,6 +237,10 @@ impl Default for ExecutionConfig {
 
 fn default_config_version() -> u32 {
     1
+}
+
+fn default_policy_engine() -> String {
+    "native".to_string()
 }
 
 fn default_policy_action() -> String {

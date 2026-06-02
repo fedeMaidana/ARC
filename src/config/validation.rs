@@ -11,6 +11,7 @@ use super::model::{AgentSourceConfig, AgentsConfig, Config, ConsoleCommandRule, 
 // ─── < Constants > ──────────────────────────────────────────────────
 
 const SUPPORTED_CONFIG_VERSION: u32 = 1;
+const POLICY_ENGINES: &[&str] = &["native"];
 const POLICY_ACTIONS: &[&str] = &["deny", "ask", "allow"];
 const COMMAND_MODES: &[&str] = &["allow", "ask", "deny"];
 const HTTP_SCHEMES: &[&str] = &["http", "https"];
@@ -123,6 +124,7 @@ fn validate_config_version(validator: &mut ConfigValidator, config: &Config) {
 }
 
 fn validate_policy(validator: &mut ConfigValidator, config: &Config) {
+    validate_supported_value(validator, "policy.engine", &config.policy.engine, POLICY_ENGINES);
     validate_supported_value(validator, "policy.default_action", &config.policy.default_action, POLICY_ACTIONS);
 }
 
