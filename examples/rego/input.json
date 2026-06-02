@@ -1,0 +1,17 @@
+{
+  "request": {
+    "mode": "check",
+    "action": "run",
+    "resource": "echo hola",
+    "command": {
+      "name": "echo",
+      "args": [
+        "hola"
+      ],
+      "parts": [
+        "echo",
+        "hola"
+      ]
+    }
+  }
+}

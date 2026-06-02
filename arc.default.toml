@@ -1,8 +1,13 @@
 config_version = 1
 
 [policy]
-engine = "native"
-default_action = "deny"
+  engine = "native"
+  default_action = "deny"
+
+[policy.rego]
+  policy_path = "~/.config/arc/policies.d"
+  entrypoint = "data.arc.decision"
+  timeout_seconds = 2
 
 # ─── < Agents > ───────────────────────────────────────────────────────────
 
