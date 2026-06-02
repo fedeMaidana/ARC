@@ -38,6 +38,7 @@ pub enum DecisionReason {
     InvalidHttpUrl,
     HttpTargetBlocked,
     ActionNotConfigured,
+    PolicyEngineFailed,
 }
 
 // ─── < Structs > ────────────────────────────────────────────────────
@@ -59,6 +60,15 @@ impl DecisionStatus {
             DecisionStatus::Ask => "ask",
         }
     }
+
+    pub fn from_text(value: &str) -> Option<Self> {
+        match value {
+            "allow" => Some(Self::Allow),
+            "deny" => Some(Self::Deny),
+            "ask" => Some(Self::Ask),
+            _ => None,
+        }
+    }
 }
 
 impl RiskLevel {
@@ -68,6 +78,16 @@ impl RiskLevel {
             RiskLevel::Medium => "medium",
             RiskLevel::High => "high",
             RiskLevel::Critical => "critical",
+        }
+    }
+
+    pub fn from_text(value: &str) -> Option<Self> {
+        match value {
+            "low" => Some(Self::Low),
+            "medium" => Some(Self::Medium),
+            "high" => Some(Self::High),
+            "critical" => Some(Self::Critical),
+            _ => None,
         }
     }
 }
@@ -96,6 +116,7 @@ impl DecisionReason {
             DecisionReason::InvalidHttpUrl => "HTTP URL is invalid or unsupported",
             DecisionReason::HttpTargetBlocked => "HTTP target is blocked by policy",
             DecisionReason::ActionNotConfigured => "action is not configured in policy",
+            DecisionReason::PolicyEngineFailed => "policy engine failed",
         }
     }
 
@@ -122,6 +143,35 @@ impl DecisionReason {
             DecisionReason::InvalidHttpUrl => "invalid_http_url",
             DecisionReason::HttpTargetBlocked => "http_target_blocked",
             DecisionReason::ActionNotConfigured => "action_not_configured",
+            DecisionReason::PolicyEngineFailed => "policy_engine_failed",
+        }
+    }
+
+    pub fn from_code(value: &str) -> Option<Self> {
+        match value {
+            "action_allowed" => Some(Self::ActionAllowed),
+            "action_blocked" => Some(Self::ActionBlocked),
+            "action_requires_approval" => Some(Self::ActionRequiresApproval),
+            "action_allowed_by_default" => Some(Self::ActionAllowedByDefault),
+            "action_requires_approval_by_default" => Some(Self::ActionRequiresApprovalByDefault),
+            "resource_required" => Some(Self::ResourceRequired),
+            "console_command_required" => Some(Self::ConsoleCommandRequired),
+            "console_command_blocked" => Some(Self::ConsoleCommandBlocked),
+            "console_command_not_allowed" => Some(Self::ConsoleCommandNotAllowed),
+            "console_command_requires_approval" => Some(Self::ConsoleCommandRequiresApproval),
+            "console_subcommand_required" => Some(Self::ConsoleSubcommandRequired),
+            "console_subcommand_blocked" => Some(Self::ConsoleSubcommandBlocked),
+            "console_subcommand_not_allowed" => Some(Self::ConsoleSubcommandNotAllowed),
+            "console_subcommand_requires_approval" => Some(Self::ConsoleSubcommandRequiresApproval),
+            "console_argument_blocked" => Some(Self::ConsoleArgumentBlocked),
+            "console_argument_requires_approval" => Some(Self::ConsoleArgumentRequiresApproval),
+            "resource_protected" => Some(Self::ResourceProtected),
+            "path_blocked" => Some(Self::PathBlocked),
+            "invalid_http_url" => Some(Self::InvalidHttpUrl),
+            "http_target_blocked" => Some(Self::HttpTargetBlocked),
+            "action_not_configured" => Some(Self::ActionNotConfigured),
+            "policy_engine_failed" => Some(Self::PolicyEngineFailed),
+            _ => None,
         }
     }
 }

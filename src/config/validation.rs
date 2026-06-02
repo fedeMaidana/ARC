@@ -11,7 +11,7 @@ use super::model::{AgentSourceConfig, AgentsConfig, Config, ConsoleCommandRule, 
 // ─── < Constants > ──────────────────────────────────────────────────
 
 const SUPPORTED_CONFIG_VERSION: u32 = 1;
-const POLICY_ENGINES: &[&str] = &["native"];
+const POLICY_ENGINES: &[&str] = &["native", "rego"];
 const POLICY_ACTIONS: &[&str] = &["deny", "ask", "allow"];
 const COMMAND_MODES: &[&str] = &["allow", "ask", "deny"];
 const HTTP_SCHEMES: &[&str] = &["http", "https"];
@@ -126,6 +126,22 @@ fn validate_config_version(validator: &mut ConfigValidator, config: &Config) {
 fn validate_policy(validator: &mut ConfigValidator, config: &Config) {
     validate_supported_value(validator, "policy.engine", &config.policy.engine, POLICY_ENGINES);
     validate_supported_value(validator, "policy.default_action", &config.policy.default_action, POLICY_ACTIONS);
+
+    if config.policy.rego.policy_path.trim().is_empty() {
+        validator.issue("policy.rego.policy_path", "Rego policy path cannot be empty");
+    }
+
+    if config.policy.rego.entrypoint.trim().is_empty() {
+        validator.issue("policy.rego.entrypoint", "Rego entrypoint cannot be empty");
+    }
+
+    if !config.policy.rego.entrypoint.starts_with("data.") {
+        validator.issue("policy.rego.entrypoint", "Rego entrypoint must start with \"data.\"");
+    }
+
+    if config.policy.rego.timeout_seconds == 0 {
+        validator.issue("policy.rego.timeout_seconds", "Rego timeout must be greater than zero");
+    }
 }
 
 fn validate_agents(validator: &mut ConfigValidator, agents: &AgentsConfig) {

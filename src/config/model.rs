@@ -34,6 +34,21 @@ pub struct PolicyConfig {
 
     #[serde(default = "default_policy_action")]
     pub default_action: String,
+
+    #[serde(default)]
+    pub rego: RegoPolicyConfig,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RegoPolicyConfig {
+    #[serde(default = "default_rego_policy_path")]
+    pub policy_path: String,
+
+    #[serde(default = "default_rego_entrypoint")]
+    pub entrypoint: String,
+
+    #[serde(default = "default_rego_timeout_seconds")]
+    pub timeout_seconds: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -199,6 +214,17 @@ impl Default for PolicyConfig {
         Self {
             engine: default_policy_engine(),
             default_action: default_policy_action(),
+            rego: RegoPolicyConfig::default(),
+        }
+    }
+}
+
+impl Default for RegoPolicyConfig {
+    fn default() -> Self {
+        Self {
+            policy_path: default_rego_policy_path(),
+            entrypoint: default_rego_entrypoint(),
+            timeout_seconds: default_rego_timeout_seconds(),
         }
     }
 }
@@ -245,6 +271,18 @@ fn default_policy_engine() -> String {
 
 fn default_policy_action() -> String {
     "deny".to_string()
+}
+
+fn default_rego_policy_path() -> String {
+    "~/.config/arc/policies.d".to_string()
+}
+
+fn default_rego_entrypoint() -> String {
+    "data.arc.decision".to_string()
+}
+
+fn default_rego_timeout_seconds() -> u64 {
+    2
 }
 
 fn default_allow_unknown_sources() -> bool {

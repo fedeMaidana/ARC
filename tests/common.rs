@@ -1,7 +1,8 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
 use arc::config::{
-    ActionsConfig, AgentsConfig, AuditConfig, Config, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig,
+    ActionsConfig, AgentsConfig, AuditConfig, Config, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig, RegoPolicyConfig,
+    ResourcesConfig,
 };
 
 // ─── < Public Helpers > ─────────────────────────────────────────────
@@ -16,6 +17,7 @@ pub fn test_config() -> Config {
         policy: PolicyConfig {
             engine: "native".to_string(),
             default_action: "deny".to_string(),
+            rego: RegoPolicyConfig::default(),
         },
         agents: AgentsConfig::default(),
         actions: ActionsConfig {

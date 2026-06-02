@@ -68,6 +68,9 @@ pub fn print_config(config: &Config, path: &Path) {
     println!("{}", ui::section("Policy"));
     println!("  {} {}", ui::bold("engine"), config.policy.engine);
     println!("  {} {}", ui::bold("default action"), config.policy.default_action);
+    println!("  {} {}", ui::bold("rego policy path"), config.policy.rego.policy_path);
+    println!("  {} {}", ui::bold("rego entrypoint"), config.policy.rego.entrypoint);
+    println!("  {} {}", ui::bold("rego timeout seconds"), config.policy.rego.timeout_seconds);
 
     println!("{}", ui::section("Agents"));
     println!("  {} {}", ui::bold("allow unknown sources"), config.agents.allow_unknown_sources);

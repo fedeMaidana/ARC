@@ -7,6 +7,7 @@ mod http;
 mod input;
 mod native;
 mod output;
+mod rego;
 mod resource;
 mod risk;
 
@@ -16,3 +17,4 @@ pub use self::engine::{PolicyEngine, decide};
 pub use self::input::PolicyInput;
 pub use self::native::NativePolicyEngine;
 pub use self::output::PolicyDecision;
+pub use self::rego::RegoPolicyEngine;

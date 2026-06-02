@@ -2,7 +2,7 @@
 
 use arc::config::{
     ActionsConfig, AgentSourceConfig, AgentsConfig, AuditConfig, Config, ConfigValidationError, ConsoleCommandRule, ConsoleConfig,
-    ExecutionConfig, HttpConfig, PolicyConfig, ResourcesConfig, validate,
+    ExecutionConfig, HttpConfig, PolicyConfig, RegoPolicyConfig, ResourcesConfig, validate,
 };
 
 // ─── < Tests > ──────────────────────────────────────────────────────
@@ -30,6 +30,18 @@ fn accepts_custom_agent_source() {
 }
 
 #[test]
+fn accepts_rego_policy_engine_config() {
+    let mut config = default_config();
+
+    config.policy.engine = "rego".to_string();
+    config.policy.rego.policy_path = "~/.config/arc/policies.d".to_string();
+    config.policy.rego.entrypoint = "data.arc.decision".to_string();
+    config.policy.rego.timeout_seconds = 2;
+
+    assert!(validate(&config).is_ok());
+}
+
+#[test]
 fn rejects_unsupported_config_version() {
     let mut config = default_config();
 
@@ -42,17 +54,39 @@ fn rejects_unsupported_config_version() {
 fn rejects_unsupported_policy_values() {
     let mut config = default_config();
 
-    config.policy.engine = "rego".to_string();
+    config.policy.engine = "magic".to_string();
     config.policy.default_action = "permit".to_string();
     config.console.default_command_policy = "maybe".to_string();
 
     assert_validation_error(
         &config,
         &[
-            "policy.engine: unsupported value \"rego\"",
-            "expected one of: native",
+            "policy.engine: unsupported value \"magic\"",
+            "expected one of: native, rego",
             "policy.default_action: unsupported value \"permit\"",
             "console.default_command_policy: unsupported value \"maybe\"",
+        ],
+    );
+}
+
+#[test]
+fn rejects_invalid_rego_policy_config() {
+    let mut config = default_config();
+
+    config.policy.engine = "rego".to_string();
+    config.policy.rego.policy_path = " ".to_string();
+    config.policy.rego.entrypoint = "arc.decision".to_string();
+    config.policy.rego.timeout_seconds = 0;
+
+    assert_validation_error(
+        &config,
+        &[
+            "policy.rego.policy_path",
+            "Rego policy path cannot be empty",
+            "policy.rego.entrypoint",
+            "Rego entrypoint must start with \"data.\"",
+            "policy.rego.timeout_seconds",
+            "Rego timeout must be greater than zero",
         ],
     );
 }
@@ -203,6 +237,7 @@ fn default_config() -> Config {
         policy: PolicyConfig {
             engine: "native".to_string(),
             default_action: "deny".to_string(),
+            rego: RegoPolicyConfig::default(),
         },
         agents: AgentsConfig {
             allow_unknown_sources: false,

@@ -2,7 +2,7 @@
 
 use arc::config::{
     ActionsConfig, AgentsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig, HttpConfig, PolicyConfig,
-    ResourcesConfig,
+    RegoPolicyConfig, ResourcesConfig,
 };
 use arc::decision::{Decision, DecisionReason, DecisionStatus, RiskLevel};
 use arc::request::{Request, RequestMode};
@@ -15,6 +15,7 @@ pub fn default_config() -> Config {
         policy: PolicyConfig {
             engine: "native".to_string(),
             default_action: "deny".to_string(),
+            rego: RegoPolicyConfig::default(),
         },
         agents: AgentsConfig::default(),
         actions: ActionsConfig {
