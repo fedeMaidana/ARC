@@ -51,7 +51,7 @@ impl CliCommand {
             "init" => Ok(Self::Init),
             "config" => Self::parse_config_command(args),
             "decide" => Self::parse_decide_command(args),
-            "tui" => Ok(Self::Tui),
+            "monitor" | "tui" => Ok(Self::Tui),
             _ => Self::parse_policy_request(args),
         }
     }

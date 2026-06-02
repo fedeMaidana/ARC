@@ -41,6 +41,15 @@ fn parses_config_check_command() {
 }
 
 #[test]
+fn parses_monitor_command() {
+    let args = vec!["arc".to_string(), "monitor".to_string()];
+
+    let result = CliCommand::from_args(&args);
+
+    assert!(matches!(result, Ok(CliCommand::Tui)));
+}
+
+#[test]
 fn parses_tui_command() {
     let args = vec!["arc".to_string(), "tui".to_string()];
 

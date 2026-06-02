@@ -50,7 +50,7 @@ impl OutputMode {
     fn from_args(args: &[String]) -> Self {
         if is_json_decide_command(args) {
             Self::Json
-        } else if is_tui_command(args) {
+        } else if is_interactive_command(args) {
             Self::Tui
         } else {
             Self::Human
@@ -89,6 +89,6 @@ fn is_json_decide_command(args: &[String]) -> bool {
     args.len() >= 3 && args[1] == "decide" && args[2] == "--json"
 }
 
-fn is_tui_command(args: &[String]) -> bool {
-    args.len() >= 2 && args[1] == "tui"
+fn is_interactive_command(args: &[String]) -> bool {
+    args.len() >= 2 && matches!(args[1].as_str(), "monitor" | "tui")
 }

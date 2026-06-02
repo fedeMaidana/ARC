@@ -13,8 +13,23 @@ fn help_command_prints_usage() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("ARC"));
-    assert!(stdout.contains("Usage"));
+
+    assert!(stdout.contains("Setup"));
+    assert!(stdout.contains("arc init"));
+
+    assert!(stdout.contains("Config"));
+    assert!(stdout.contains("arc config path"));
+    assert!(stdout.contains("arc config check"));
+    assert!(stdout.contains("arc config show"));
+
+    assert!(stdout.contains("Policy"));
     assert!(stdout.contains("arc run <command> [args...]"));
+    assert!(stdout.contains("arc check run <command> [args...]"));
+    assert!(stdout.contains("arc decide --json"));
+
+    assert!(stdout.contains("Interactive"));
+    assert!(stdout.contains("arc monitor"));
+    assert!(stdout.contains("arc tui"));
 }
 
 #[test]
@@ -41,7 +56,10 @@ fn unknown_config_command_prints_cli_error() {
 
     assert!(stdout.contains("CLI error"));
     assert!(stdout.contains("unknown config command 'nope'"));
-    assert!(stdout.contains("Usage"));
+    assert!(stdout.contains("Setup"));
+    assert!(stdout.contains("Config"));
+    assert!(stdout.contains("Policy"));
+    assert!(stdout.contains("Interactive"));
 }
 
 #[test]
@@ -54,5 +72,8 @@ fn check_without_action_prints_cli_error() {
 
     assert!(stdout.contains("CLI error"));
     assert!(stdout.contains("missing action after 'check'"));
-    assert!(stdout.contains("Usage"));
+    assert!(stdout.contains("Setup"));
+    assert!(stdout.contains("Config"));
+    assert!(stdout.contains("Policy"));
+    assert!(stdout.contains("Interactive"));
 }
