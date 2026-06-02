@@ -1,8 +1,5 @@
 // ─── < Unit Test Modules > ──────────────────────────────────────────
 
-#[path = "unit/agent_tests.rs"]
-mod agent_tests;
-
 #[path = "unit/audit_tests.rs"]
 mod audit_tests;
 
@@ -23,6 +20,9 @@ mod http_target_tests;
 
 #[path = "unit/json_api_tests.rs"]
 mod json_api_tests;
+
+#[path = "unit/policy_engine_tests.rs"]
+mod policy_engine_tests;
 
 #[path = "unit/policy_tests.rs"]
 mod policy_tests;
