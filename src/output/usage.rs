@@ -54,7 +54,7 @@ pub fn print_usage() {
     println!("{}", ui::dim("Tip: ARC uses built-in runtime defaults, ARC_* environment variables, and optional Rego policies."));
 }
 
-pub fn print_config_usage() {
+pub fn print_settings_usage() {
     println!("{}", ui::section("Runtime settings usage"));
     println!("  {}", ui::bold("arc settings path"));
     println!("  {}", ui::bold("arc settings check"));

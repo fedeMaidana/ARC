@@ -5,7 +5,7 @@ use super::common::{TestFixture, assert_success, stdout};
 // ─── < Tests > ──────────────────────────────────────────────────────
 
 #[test]
-fn settings_show_prints_runtime_config() {
+fn settings_show_prints_runtime_settings() {
     let fixture = TestFixture::new("settings-show");
     let output = fixture.run(&["settings", "show"]);
 
@@ -13,7 +13,7 @@ fn settings_show_prints_runtime_config() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Config"));
+    assert!(stdout.contains("Runtime settings"));
     assert!(stdout.contains("source:"));
     assert!(stdout.contains("runtime defaults + ARC_* environment"));
     assert!(stdout.contains("Policy"));
@@ -35,12 +35,12 @@ fn config_show_still_works_as_compatibility_alias() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Config"));
+    assert!(stdout.contains("Runtime settings"));
     assert!(stdout.contains("runtime defaults + ARC_* environment"));
 }
 
 #[test]
-fn settings_path_prints_runtime_config_source() {
+fn settings_path_prints_runtime_settings_source() {
     let fixture = TestFixture::new("settings-path");
     let output = fixture.run(&["settings", "path"]);
 
@@ -48,7 +48,7 @@ fn settings_path_prints_runtime_config_source() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Config source"));
+    assert!(stdout.contains("Runtime settings source"));
     assert!(stdout.contains("runtime defaults + ARC_* environment"));
 }
 
@@ -61,12 +61,12 @@ fn config_path_still_works_as_compatibility_alias() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Config source"));
+    assert!(stdout.contains("Runtime settings source"));
     assert!(stdout.contains("runtime defaults + ARC_* environment"));
 }
 
 #[test]
-fn settings_check_prints_success_for_runtime_config() {
+fn settings_check_prints_success_for_runtime_settings() {
     let fixture = TestFixture::new("settings-check-valid");
     let output = fixture.run(&["settings", "check"]);
 
@@ -74,7 +74,7 @@ fn settings_check_prints_success_for_runtime_config() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Runtime config is valid"));
+    assert!(stdout.contains("Runtime settings are valid"));
     assert!(stdout.contains("runtime defaults + ARC_* environment"));
 }
 
@@ -87,12 +87,12 @@ fn config_check_still_works_as_compatibility_alias() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Runtime config is valid"));
+    assert!(stdout.contains("Runtime settings are valid"));
     assert!(stdout.contains("runtime defaults + ARC_* environment"));
 }
 
 #[test]
-fn settings_check_prints_validation_errors_for_invalid_runtime_config() {
+fn settings_check_prints_validation_errors_for_invalid_runtime_settings() {
     let fixture = TestFixture::with_env("settings-check-invalid", "ARC_POLICY_ENGINE", "magic");
     let output = fixture.run(&["settings", "check"]);
 
@@ -100,7 +100,7 @@ fn settings_check_prints_validation_errors_for_invalid_runtime_config() {
 
     let stdout = stdout(&output);
 
-    assert!(stdout.contains("Config error"));
+    assert!(stdout.contains("Runtime settings error"));
     assert!(stdout.contains("policy.engine"));
     assert!(stdout.contains("unsupported value \"magic\""));
 }

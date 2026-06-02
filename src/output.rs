@@ -11,8 +11,10 @@ mod usage;
 // ─── < Public Exports > ─────────────────────────────────────────────
 
 pub use self::banner::print_banner;
-pub use self::config::{print_config, print_config_check_error, print_config_check_success, print_config_init_result, print_config_path};
+pub use self::config::{
+    print_policy_init_result, print_settings, print_settings_check_error, print_settings_check_success, print_settings_source_path,
+};
 pub use self::decision::print_decision;
 pub use self::error::{print_app_error, print_cli_error};
 pub use self::execution::print_execution_report;
-pub use self::usage::{print_config_usage, print_usage};
+pub use self::usage::{print_settings_usage, print_usage};

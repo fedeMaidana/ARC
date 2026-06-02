@@ -10,7 +10,7 @@ use super::shared::print_list;
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn print_config_init_result(result: &ConfigInitResult) {
+pub fn print_policy_init_result(result: &ConfigInitResult) {
     match result {
         ConfigInitResult::Created(path) => {
             println!("{}", ui::green("✅ Rego policy created"));
@@ -23,18 +23,18 @@ pub fn print_config_init_result(result: &ConfigInitResult) {
     }
 }
 
-pub fn print_config_path(path: &Path) {
-    println!("{}", ui::section("Config source"));
+pub fn print_settings_source_path(path: &Path) {
+    println!("{}", ui::section("Runtime settings source"));
     println!("  {}", path.display());
 }
 
-pub fn print_config_check_success(path: &Path) {
-    println!("{}", ui::green("✅ Runtime config is valid"));
+pub fn print_settings_check_success(path: &Path) {
+    println!("{}", ui::green("✅ Runtime settings are valid"));
     println!("  {} {}", ui::dim("source:"), path.display());
 }
 
-pub fn print_config_check_error(error: &ConfigError) {
-    println!("{}", ui::red("❌ Config error"));
+pub fn print_settings_check_error(error: &ConfigError) {
+    println!("{}", ui::red("❌ Runtime settings error"));
 
     match error {
         ConfigError::Validation { source } => {
@@ -52,8 +52,8 @@ pub fn print_config_check_error(error: &ConfigError) {
     }
 }
 
-pub fn print_config(config: &Config, path: &Path) {
-    println!("{}", ui::section("Config"));
+pub fn print_settings(config: &Config, path: &Path) {
+    println!("{}", ui::section("Runtime settings"));
     println!("  {} {}", ui::dim("source:"), path.display());
     println!("  {} {}", ui::dim("version:"), config.config_version);
     println!();

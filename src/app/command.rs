@@ -36,7 +36,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
 fn handle_init_command() -> Result<i32> {
     let result = config::init_default_config().context("could not initialize ARC Rego policy")?;
 
-    output::print_config_init_result(&result);
+    output::print_policy_init_result(&result);
 
     Ok(0)
 }
@@ -44,7 +44,7 @@ fn handle_init_command() -> Result<i32> {
 fn handle_settings_path_command() -> Result<i32> {
     let source = config::runtime_config_source_path();
 
-    output::print_config_path(&source);
+    output::print_settings_source_path(&source);
 
     Ok(0)
 }
@@ -52,11 +52,11 @@ fn handle_settings_path_command() -> Result<i32> {
 fn handle_settings_check_command() -> Result<i32> {
     match config::load_from_default_locations() {
         Ok((_loaded_config, source)) => {
-            output::print_config_check_success(&source);
+            output::print_settings_check_success(&source);
             Ok(0)
         }
         Err(error) => {
-            output::print_config_check_error(&error);
+            output::print_settings_check_error(&error);
             Ok(2)
         }
     }
@@ -65,13 +65,13 @@ fn handle_settings_check_command() -> Result<i32> {
 fn handle_settings_show_command() -> Result<i32> {
     let (loaded_config, source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
 
-    output::print_config(&loaded_config, &source);
+    output::print_settings(&loaded_config, &source);
 
     Ok(0)
 }
 
 fn handle_settings_help_command() -> Result<i32> {
-    output::print_config_usage();
+    output::print_settings_usage();
 
     Ok(2)
 }
