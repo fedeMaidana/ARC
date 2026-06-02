@@ -53,7 +53,6 @@ fn runtime_agents_config() -> Result<AgentsConfig, ConfigError> {
     let mut sources = vec![
         agent_source("cli", "ARC CLI", true, "local_cli", Some("Built-in human command-line usage")),
         agent_source("json_api", "ARC JSON API", true, "local_cli", Some("Built-in machine-readable JSON interface")),
-        agent_source("opencode", "OpenCode", true, "local_agent", Some("OpenCode custom bash tool routed through ARC")),
     ];
 
     sources.extend(agent_sources_from_environment()?);

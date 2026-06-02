@@ -13,7 +13,6 @@ use serde_json::Value;
 pub fn run_arc(args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_arc"))
         .args(args)
-        .env_remove("ARC_CONFIG")
         .env("ARC_AUDIT_ENABLED", "false")
         .output()
         .expect("failed to execute arc binary")
@@ -74,7 +73,6 @@ impl TestFixture {
 
         command
             .args(args)
-            .env_remove("ARC_CONFIG")
             .env("ARC_AUDIT_ENABLED", "false")
             .env("ARC_POLICY_ENGINE", "native")
             .env("ARC_EXECUTION_WORKING_DIRECTORY", ".")

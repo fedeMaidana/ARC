@@ -31,13 +31,13 @@ fn audit_event_contains_stable_schema_metadata() {
 fn audit_event_contains_source_metadata() {
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string()]);
 
-    let source = AgentSource::registered("opencode");
+    let source = AgentSource::registered("custom-agent");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
 
     let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
-    assert_eq!(event.source, "opencode");
+    assert_eq!(event.source, "custom-agent");
     assert_eq!(event.source_status, "registered");
 }
 
@@ -153,7 +153,7 @@ fn record_event_writes_json_line() {
 
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string()]);
 
-    let source = AgentSource::registered("opencode");
+    let source = AgentSource::registered("custom-agent");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
     let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
@@ -174,7 +174,7 @@ fn record_event_writes_json_line() {
     assert_eq!(json["reason"], "request matches an allowed policy");
     assert_eq!(json["reason_code"], "action_allowed");
     assert_eq!(json["risk"], "low");
-    assert_eq!(json["source"], "opencode");
+    assert_eq!(json["source"], "custom-agent");
     assert_eq!(json["source_status"], "registered");
 
     let _ = fs::remove_file(audit_path);

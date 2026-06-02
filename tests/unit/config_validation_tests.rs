@@ -123,9 +123,9 @@ fn rejects_duplicate_agent_source_ids() {
     config
         .agents
         .sources
-        .push(agent_source("opencode", "Another OpenCode", true, "local_agent", None));
+        .push(agent_source("custom-agent", "Another OpenCode", true, "local_agent", None));
 
-    assert_validation_error(&config, &["agents.sources[1].id", "duplicate agent source id \"opencode\""]);
+    assert_validation_error(&config, &["agents.sources[1].id", "duplicate agent source id \"custom-agent\""]);
 }
 
 #[test]
@@ -242,7 +242,7 @@ fn default_config() -> Config {
         agents: AgentsConfig {
             allow_unknown_sources: false,
             sources: vec![agent_source(
-                "opencode",
+                "custom-agent",
                 "OpenCode",
                 true,
                 "local_agent",

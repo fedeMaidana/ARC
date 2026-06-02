@@ -16,24 +16,24 @@ fn builtin_source_has_builtin_status() {
 
 #[test]
 fn classifies_enabled_registered_source() {
-    let config = agents_config(false, vec![agent_source("opencode", true)]);
+    let config = agents_config(false, vec![agent_source("custom-agent", true)]);
 
-    let source = classify_source("opencode", &config).expect("source should be allowed");
+    let source = classify_source("custom-agent", &config).expect("source should be allowed");
 
-    assert_eq!(source.id(), "opencode");
+    assert_eq!(source.id(), "custom-agent");
     assert_eq!(source.status(), AgentSourceStatus::Registered);
     assert_eq!(source.status_text(), "registered");
 }
 
 #[test]
 fn rejects_disabled_registered_source() {
-    let config = agents_config(true, vec![agent_source("opencode", false)]);
+    let config = agents_config(true, vec![agent_source("custom-agent", false)]);
 
-    let error = classify_source("opencode", &config).expect_err("source should be rejected");
+    let error = classify_source("custom-agent", &config).expect_err("source should be rejected");
 
     match error {
         AgentSourceError::Disabled { source_id } => {
-            assert_eq!(source_id, "opencode");
+            assert_eq!(source_id, "custom-agent");
         }
         _ => panic!("expected disabled source error"),
     }
@@ -41,7 +41,7 @@ fn rejects_disabled_registered_source() {
 
 #[test]
 fn allows_unknown_source_when_unknown_sources_are_allowed() {
-    let config = agents_config(true, vec![agent_source("opencode", true)]);
+    let config = agents_config(true, vec![agent_source("custom-agent", true)]);
 
     let source = classify_source("custom-agent", &config).expect("source should be allowed");
 
@@ -52,7 +52,7 @@ fn allows_unknown_source_when_unknown_sources_are_allowed() {
 
 #[test]
 fn rejects_unknown_source_when_unknown_sources_are_disabled() {
-    let config = agents_config(false, vec![agent_source("opencode", true)]);
+    let config = agents_config(false, vec![agent_source("custom-agent", true)]);
 
     let error = classify_source("custom-agent", &config).expect_err("source should be rejected");
 
@@ -66,11 +66,11 @@ fn rejects_unknown_source_when_unknown_sources_are_disabled() {
 
 #[test]
 fn trims_source_before_classification() {
-    let config = agents_config(false, vec![agent_source("opencode", true)]);
+    let config = agents_config(false, vec![agent_source("custom-agent", true)]);
 
-    let source = classify_source(" opencode ", &config).expect("source should be allowed");
+    let source = classify_source(" custom-agent ", &config).expect("source should be allowed");
 
-    assert_eq!(source.id(), "opencode");
+    assert_eq!(source.id(), "custom-agent");
     assert_eq!(source.status(), AgentSourceStatus::Registered);
 }
 
