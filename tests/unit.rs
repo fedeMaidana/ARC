@@ -1,5 +1,8 @@
 // ─── < Unit Test Modules > ──────────────────────────────────────────
 
+#[path = "unit/agent_tests.rs"]
+mod agent_tests;
+
 #[path = "unit/audit_tests.rs"]
 mod audit_tests;
 

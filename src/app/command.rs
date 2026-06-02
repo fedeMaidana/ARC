@@ -93,13 +93,14 @@ fn handle_decide_json_command() -> Result<i32> {
     };
 
     let (loaded_config, _path) = config::load_from_default_locations().context("could not load ARC config")?;
+    let source = audit::resolve_source("json_api", &loaded_config.agents)?;
 
     audit::prepare(&loaded_config.audit)?;
 
     let decision = policy::decide(&request, &loaded_config);
     let execution_report = executor::execute(&request, &decision, &loaded_config.execution, &loaded_config.console);
 
-    audit::record("json_api", &loaded_config.audit, &request, &decision, &execution_report)?;
+    audit::record(&source, &loaded_config.audit, &request, &decision, &execution_report)?;
 
     let response = json_api::decision_response_from_parts(&request, &decision, &execution_report);
 
@@ -116,6 +117,7 @@ fn handle_tui_command() -> Result<i32> {
 
 fn handle_policy_request(request: Request) -> Result<i32> {
     let (loaded_config, _path) = config::load_from_default_locations().context("could not load ARC config")?;
+    let source = audit::resolve_source("cli", &loaded_config.agents)?;
 
     audit::prepare(&loaded_config.audit)?;
 
@@ -129,7 +131,7 @@ fn handle_policy_request(request: Request) -> Result<i32> {
         executor::execute(&request, &decision, &loaded_config.execution, &loaded_config.console)
     };
 
-    audit::record("cli", &loaded_config.audit, &request, &decision, &execution_report)?;
+    audit::record(&source, &loaded_config.audit, &request, &decision, &execution_report)?;
 
     output::print_execution_report(&execution_report);
 

@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use arc::agent::AgentSource;
 use arc::audit::{self, AUDIT_SCHEMA_VERSION, AuditEvent, AuditExecution};
 use arc::config::AuditConfig;
 use arc::decision::{Decision, DecisionReason};
@@ -16,23 +17,39 @@ use arc::request::{Request, RequestMode};
 fn audit_event_contains_stable_schema_metadata() {
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string(), "-la".to_string()]);
 
+    let source = AgentSource::builtin("test");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
 
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     assert_eq!(event.audit_schema_version, AUDIT_SCHEMA_VERSION);
     assert_eq!(event.reason_code, "action_allowed");
 }
 
 #[test]
-fn audit_event_contains_decision_data() {
-    let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string(), "-la".to_string()]);
+fn audit_event_contains_source_metadata() {
+    let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string()]);
 
+    let source = AgentSource::registered("opencode");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
 
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
+
+    assert_eq!(event.source, "opencode");
+    assert_eq!(event.source_status, "registered");
+}
+
+#[test]
+fn audit_event_contains_decision_data() {
+    let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string(), "-la".to_string()]);
+
+    let source = AgentSource::builtin("test");
+    let decision = Decision::allow(DecisionReason::ActionAllowed);
+    let execution_report = ExecutionReport::CheckMode { allowed: true };
+
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     assert_eq!(event.mode, "check");
     assert_eq!(event.action, "run");
@@ -44,16 +61,18 @@ fn audit_event_contains_decision_data() {
     assert!(!event.executed);
     assert_eq!(event.exit_code, 0);
     assert_eq!(event.source, "test");
+    assert_eq!(event.source_status, "builtin");
 }
 
 #[test]
 fn audit_event_redacts_sensitive_resource_values() {
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["echo".to_string(), "api_key=super-secret-value".to_string()]);
 
+    let source = AgentSource::builtin("test");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
 
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     assert_eq!(event.resource, Some("echo api_key=[redacted]".to_string()));
 }
@@ -62,6 +81,7 @@ fn audit_event_redacts_sensitive_resource_values() {
 fn audit_event_redacts_sensitive_command_line_values() {
     let request = Request::new(RequestMode::Execute, "run".to_string(), vec!["echo".to_string()]);
 
+    let source = AgentSource::builtin("test");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CommandFinished(CommandExecutionReport {
         command_line: "echo token=super-secret-value".to_string(),
@@ -74,7 +94,7 @@ fn audit_event_redacts_sensitive_command_line_values() {
         stderr_truncated: false,
     });
 
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     match event.execution {
         AuditExecution::CommandFinished { command_line, .. } => {
@@ -88,13 +108,14 @@ fn audit_event_redacts_sensitive_command_line_values() {
 fn audit_event_redacts_sensitive_error_details() {
     let request = Request::new(RequestMode::Execute, "run".to_string(), vec!["custom".to_string()]);
 
+    let source = AgentSource::builtin("test");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CommandFailed(CommandExecutionError {
         command_line: "custom --password=hunter2".to_string(),
         details: "failed with authorization=BearerSecret".to_string(),
     });
 
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     match event.execution {
         AuditExecution::CommandFailed { command_line, details } => {
@@ -109,10 +130,11 @@ fn audit_event_redacts_sensitive_error_details() {
 fn audit_event_truncates_large_fields() {
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["echo".to_string(), "x".repeat(2_000)]);
 
+    let source = AgentSource::builtin("test");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
 
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     let resource = event.resource.expect("resource should be present");
 
@@ -131,9 +153,10 @@ fn record_event_writes_json_line() {
 
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string()]);
 
+    let source = AgentSource::registered("opencode");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     audit::record_event(&config, &event).expect("audit event should be written");
 
@@ -151,7 +174,8 @@ fn record_event_writes_json_line() {
     assert_eq!(json["reason"], "request matches an allowed policy");
     assert_eq!(json["reason_code"], "action_allowed");
     assert_eq!(json["risk"], "low");
-    assert_eq!(json["source"], "test");
+    assert_eq!(json["source"], "opencode");
+    assert_eq!(json["source_status"], "registered");
 
     let _ = fs::remove_file(audit_path);
 }
@@ -169,9 +193,10 @@ fn record_event_restricts_audit_log_permissions() {
     };
 
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string()]);
+    let source = AgentSource::builtin("test");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     audit::record_event(&config, &event).expect("audit event should be written");
 
@@ -197,9 +222,10 @@ fn disabled_audit_does_not_create_log_file() {
 
     let request = Request::new(RequestMode::Check, "run".to_string(), vec!["ls".to_string()]);
 
+    let source = AgentSource::builtin("test");
     let decision = Decision::allow(DecisionReason::ActionAllowed);
     let execution_report = ExecutionReport::CheckMode { allowed: true };
-    let event = AuditEvent::from_parts("test", &request, &decision, &execution_report);
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
 
     audit::record_event(&config, &event).expect("disabled audit should not fail");
 

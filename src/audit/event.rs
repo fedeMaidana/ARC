@@ -4,6 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
 
+use crate::agent::AgentSource;
 use crate::decision::Decision;
 use crate::executor::ExecutionReport;
 use crate::request::Request;
@@ -21,6 +22,7 @@ pub struct AuditEvent {
     pub audit_schema_version: String,
     pub timestamp_unix_seconds: u64,
     pub source: String,
+    pub source_status: String,
     pub mode: String,
     pub action: String,
     pub resource: Option<String>,
@@ -68,11 +70,12 @@ pub enum AuditExecution {
 // ─── < Implementations > ────────────────────────────────────────────
 
 impl AuditEvent {
-    pub fn from_parts(source: impl Into<String>, request: &Request, decision: &Decision, execution_report: &ExecutionReport) -> Self {
+    pub fn from_parts(source: &AgentSource, request: &Request, decision: &Decision, execution_report: &ExecutionReport) -> Self {
         Self {
             audit_schema_version: AUDIT_SCHEMA_VERSION.to_string(),
             timestamp_unix_seconds: current_timestamp_unix_seconds(),
-            source: sanitize_field(&source.into()),
+            source: sanitize_field(source.id()),
+            source_status: source.status_text().to_string(),
             mode: request_mode_text(request).to_string(),
             action: sanitize_field(&request.action),
             resource: audit_resource(request),

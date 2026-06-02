@@ -1,12 +1,11 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use std::env;
-
 use anyhow::{Context, Result};
 
+use crate::agent::{self, AgentSource};
 use crate::audit as audit_log;
 use crate::audit::AuditEvent;
-use crate::config::AuditConfig;
+use crate::config::{AgentsConfig, AuditConfig};
 use crate::decision::Decision;
 use crate::executor::ExecutionReport;
 use crate::request::Request;
@@ -17,25 +16,18 @@ pub fn prepare(config: &AuditConfig) -> Result<()> {
     audit_log::ensure_audit_log_is_writable(config).context("could not prepare audit log")
 }
 
+pub fn resolve_source(default_source: &str, agents_config: &AgentsConfig) -> Result<AgentSource> {
+    agent::resolve_source_from_environment(default_source, agents_config).context("could not resolve ARC source")
+}
+
 pub fn record(
-    default_source: &str,
+    source: &AgentSource,
     audit_config: &AuditConfig,
     request: &Request,
     decision: &Decision,
     execution_report: &ExecutionReport,
 ) -> Result<()> {
-    let source = source_or(default_source);
     let event = AuditEvent::from_parts(source, request, decision, execution_report);
 
     audit_log::record_event(audit_config, &event).context("could not write audit log")
-}
-
-// ─── < Private Functions > ──────────────────────────────────────────
-
-fn source_or(default_source: &str) -> String {
-    env::var("ARC_SOURCE")
-        .ok()
-        .map(|source| source.trim().to_string())
-        .filter(|source| !source.is_empty())
-        .unwrap_or_else(|| default_source.to_string())
 }
