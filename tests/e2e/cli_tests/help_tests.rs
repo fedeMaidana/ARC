@@ -27,6 +27,7 @@ fn help_command_prints_usage() {
     assert!(stdout.contains("Agents"));
     assert!(stdout.contains("arc agents scan"));
     assert!(stdout.contains("arc agents scan --known"));
+    assert!(stdout.contains("arc agents sync"));
     assert!(stdout.contains("arc agents list"));
     assert!(stdout.contains("arc agents env <id>"));
 
@@ -43,6 +44,7 @@ fn help_command_prints_usage() {
     assert!(stdout.contains("ARC_POLICY_ENGINE=native"));
     assert!(stdout.contains("ARC_POLICY_ENGINE=rego"));
     assert!(stdout.contains("ARC_REGO_POLICY_PATH"));
+    assert!(stdout.contains("ARC_AGENT_REGISTRY_PATH"));
     assert!(stdout.contains("ARC_AGENT_SOURCES"));
     assert!(stdout.contains("ARC_SOURCE"));
     assert!(stdout.contains("ARC_AUDIT_ENABLED"));

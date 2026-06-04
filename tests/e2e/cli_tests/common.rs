@@ -12,11 +12,13 @@ use serde_json::Value;
 // ─── < Public Helpers: Commands > ───────────────────────────────────
 
 pub fn run_arc(args: &[&str]) -> Output {
+    let registry_path = env::temp_dir().join(format!("arc-e2e-run-{}.agents.json", std::process::id()));
     let mut command = Command::new(env!("CARGO_BIN_EXE_arc"));
 
     command
         .args(args)
         .env("ARC_AUDIT_ENABLED", "false")
+        .env("ARC_AGENT_REGISTRY_PATH", registry_path)
         .env_remove("ARC_AGENT_SOURCES")
         .env_remove("ARC_SOURCE");
 
@@ -47,9 +49,17 @@ impl TestFixture {
     pub fn with_env(name: &str, key: &str, value: &str) -> Self {
         let mut fixture = Self::new(name);
 
-        fixture.env_overrides.push((key.to_string(), value.to_string()));
+        fixture.set_env(key, value);
 
         fixture
+    }
+
+    pub fn registry_path(&self) -> PathBuf {
+        self.root_dir.join("agents.json")
+    }
+
+    pub fn set_env(&mut self, key: &str, value: impl Into<String>) {
+        self.env_overrides.push((key.to_string(), value.into()));
     }
 
     pub fn without_system_path(mut self) -> Self {
@@ -107,6 +117,7 @@ impl TestFixture {
             .env("ARC_AUDIT_ENABLED", "false")
             .env("ARC_POLICY_ENGINE", "native")
             .env("ARC_EXECUTION_WORKING_DIRECTORY", ".")
+            .env("ARC_AGENT_REGISTRY_PATH", self.registry_path())
             .env_remove("ARC_AGENT_SOURCES")
             .env_remove("ARC_SOURCE")
             .current_dir(&self.root_dir);

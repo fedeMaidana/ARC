@@ -3,10 +3,12 @@
 use std::env;
 use std::path::PathBuf;
 
+use crate::agent;
+
 use super::validation::validate;
 use super::{
     ActionsConfig, AgentSourceConfig, AgentsConfig, AuditConfig, Config, ConfigError, ConsoleCommandRule, ConsoleConfig, ExecutionConfig,
-    HttpConfig, PolicyConfig, RegoPolicyConfig, ResourcesConfig, runtime_config_source_path,
+    HttpConfig, PolicyConfig, RegoPolicyConfig, ResourcesConfig, default_user_agent_registry_path, runtime_config_source_path,
 };
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -55,7 +57,8 @@ fn runtime_agents_config() -> Result<AgentsConfig, ConfigError> {
         agent_source("json_api", "ARC JSON API", true, "local_cli", Some("Built-in machine-readable JSON interface")),
     ];
 
-    sources.extend(agent_sources_from_environment()?);
+    merge_agent_sources(&mut sources, agent_sources_from_registry()?);
+    merge_agent_sources(&mut sources, agent_sources_from_environment()?);
 
     Ok(AgentsConfig {
         allow_unknown_sources: env_bool("ARC_AGENTS_ALLOW_UNKNOWN_SOURCES", true)?,
@@ -273,6 +276,13 @@ fn parse_bool(name: &str, value: &str) -> Result<bool, ConfigError> {
     }
 }
 
+fn agent_sources_from_registry() -> Result<Vec<AgentSourceConfig>, ConfigError> {
+    let path = default_user_agent_registry_path()?;
+    let registry = agent::load_agent_registry(&path)?;
+
+    Ok(registry.to_agent_sources())
+}
+
 fn agent_sources_from_environment() -> Result<Vec<AgentSourceConfig>, ConfigError> {
     let Some(value) = env_optional_string("ARC_AGENT_SOURCES") else {
         return Ok(Vec::new());
@@ -306,6 +316,21 @@ fn parse_agent_source(entry: &str) -> Result<AgentSourceConfig, ConfigError> {
 }
 
 // ─── < Helpers > ────────────────────────────────────────────────────
+
+fn merge_agent_sources(sources: &mut Vec<AgentSourceConfig>, additional_sources: Vec<AgentSourceConfig>) {
+    for source in additional_sources {
+        merge_agent_source(sources, source);
+    }
+}
+
+fn merge_agent_source(sources: &mut Vec<AgentSourceConfig>, source: AgentSourceConfig) {
+    if let Some(existing_source) = sources.iter_mut().find(|existing_source| existing_source.id == source.id) {
+        *existing_source = source;
+        return;
+    }
+
+    sources.push(source);
+}
 
 fn allow_command(name: &str) -> ConsoleCommandRule {
     command_rule(name, "allow")

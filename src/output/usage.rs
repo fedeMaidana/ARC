@@ -25,6 +25,8 @@ pub fn print_usage() {
     println!("      {}", ui::dim("Detect installed known agents and possible agent candidates"));
     println!("  {}", ui::bold("arc agents scan --known"));
     println!("      {}", ui::dim("Also show known agents that were not found"));
+    println!("  {}", ui::bold("arc agents sync"));
+    println!("      {}", ui::dim("Persist detected known agents in the internal registry"));
     println!("  {}", ui::bold("arc agents list"));
     println!("      {}", ui::dim("Print configured agent sources"));
     println!("  {}", ui::bold("arc agents env <id> [--name <name>]"));
@@ -49,6 +51,7 @@ pub fn print_usage() {
     println!("  ARC_POLICY_ENGINE=rego");
     println!("  ARC_REGO_POLICY_PATH=~/.config/arc/policies.d");
     println!("  ARC_REGO_ENTRYPOINT=data.arc.decision");
+    println!("  ARC_AGENT_REGISTRY_PATH=~/.local/share/arc/agents.json");
     println!("  ARC_AGENT_SOURCES=claude-code|Claude Code|local_agent|true");
     println!("  ARC_SOURCE=claude-code");
     println!("  ARC_AUDIT_ENABLED=true");
@@ -62,6 +65,7 @@ pub fn print_usage() {
     println!("  cargo run -q -- settings show");
     println!("  cargo run -q -- agents scan");
     println!("  cargo run -q -- agents scan --known");
+    println!("  cargo run -q -- agents sync");
     println!("  cargo run -q -- agents list");
     println!("  cargo run -q -- agents env claude-code --name \"Claude Code\"");
     println!("  cargo run -q -- run ls -la");
@@ -70,7 +74,12 @@ pub fn print_usage() {
     println!("  cargo run -q -- monitor");
     println!();
 
-    println!("{}", ui::dim("Tip: ARC uses built-in runtime defaults, ARC_* environment variables, and optional Rego policies."));
+    println!(
+        "{}",
+        ui::dim(
+            "Tip: ARC uses built-in runtime defaults, an internal agent registry, ARC_* environment variables, and optional Rego policies."
+        )
+    );
 }
 
 pub fn print_settings_usage() {
@@ -95,6 +104,9 @@ pub fn print_agents_usage() {
     println!("  {}", ui::bold("arc agents scan --known"));
     println!("      {}", ui::dim("Also show known agents that were not found"));
     println!();
+    println!("  {}", ui::bold("arc agents sync"));
+    println!("      {}", ui::dim("Persist detected known agents in the internal registry"));
+    println!();
     println!("  {}", ui::bold("arc agents list"));
     println!("      {}", ui::dim("Show built-in and configured agent sources"));
     println!();
@@ -114,6 +126,7 @@ pub fn print_agents_usage() {
     println!("  {}", ui::dim("Examples:"));
     println!("  arc agents scan");
     println!("  arc agents scan --known");
+    println!("  arc agents sync");
     println!("  arc agents env claude-code --name \"Claude Code\"");
     println!("  arc agents env codex --name \"Codex\"");
     println!("  arc agents env personal-agent --name \"Personal Agent\" --kind custom");

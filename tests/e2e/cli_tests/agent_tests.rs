@@ -1,5 +1,7 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use std::fs;
+
 use super::common::{TestFixture, assert_success, run_arc, stdout};
 
 // ─── < Tests > ──────────────────────────────────────────────────────
@@ -100,6 +102,49 @@ fn agents_scan_detects_ai_token_candidates_without_matching_random_words() {
     assert!(stdout.contains(&command_path.display().to_string()));
     assert!(stdout.contains("command name has token \"ai\""));
     assert!(!stdout.contains("tail"));
+}
+
+#[test]
+fn agents_sync_persists_detected_known_agents_in_registry() {
+    let mut fixture = TestFixture::new("agents-sync").without_system_path();
+
+    let command_path = fixture.create_path_command("opencode");
+    let output = fixture.run(&["agents", "sync"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Agent registry synced"));
+    assert!(stdout.contains("detected"));
+    assert!(stdout.contains("registered"));
+    assert!(stdout.contains("added"));
+
+    let registry_content = fs::read_to_string(fixture.registry_path()).expect("registry file should exist");
+
+    assert!(registry_content.contains("\"id\": \"opencode\""));
+    assert!(registry_content.contains("\"display_name\": \"OpenCode\""));
+    assert!(registry_content.contains("\"command\": \"opencode\""));
+    assert!(registry_content.contains(&command_path.display().to_string()));
+}
+
+#[test]
+fn agents_list_loads_sources_from_internal_registry() {
+    let mut fixture = TestFixture::new("agents-list-registry").without_system_path();
+
+    fixture.create_path_command("opencode");
+
+    let sync_output = fixture.run(&["agents", "sync"]);
+    assert_success(&sync_output);
+
+    let list_output = fixture.run(&["agents", "list"]);
+    assert_success(&list_output);
+
+    let stdout = stdout(&list_output);
+
+    assert!(stdout.contains("opencode"));
+    assert!(stdout.contains("OpenCode"));
+    assert!(stdout.contains("Detected command: opencode"));
 }
 
 #[test]

@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::agent::{AgentCandidate, AgentDiscovery, AgentScan, MissingKnownAgent};
+use crate::agent::{AgentCandidate, AgentDiscovery, AgentRegistrySyncReport, AgentScan, MissingKnownAgent};
 use crate::config::{AgentSourceConfig, Config};
 use crate::ui;
 
@@ -59,6 +59,17 @@ pub fn print_agent_scan_results(scan: &AgentScan) {
     println!();
     println!("{}", ui::dim("Known detected agents can be registered automatically during arc init."));
     println!("{}", ui::dim("Possible agents require confirmation before ARC treats them as trusted agents."));
+}
+
+pub fn print_agent_sync_report(report: &AgentRegistrySyncReport) {
+    println!("{}", ui::section("Agent registry synced"));
+    println!("  {} {}", ui::bold("registry path"), report.registry_path());
+    println!("  {} {}", ui::bold("detected"), report.detected_count());
+    println!("  {} {}", ui::bold("registered"), report.registered_count());
+    println!("  {} {}", ui::bold("added"), report.added_count());
+    println!("  {} {}", ui::bold("updated"), report.updated_count());
+    println!();
+    println!("{}", ui::dim("Run `arc agents list` to see the active registered sources."));
 }
 
 pub fn print_agent_env_exports(source: &AgentSourceConfig) {

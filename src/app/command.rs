@@ -27,6 +27,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
         CliCommand::SettingsHelp => handle_settings_help_command(),
         CliCommand::AgentsList => handle_agents_list_command(),
         CliCommand::AgentsScan(request) => handle_agents_scan_command(request),
+        CliCommand::AgentsSync => handle_agents_sync_command(),
         CliCommand::AgentsEnv(request) => handle_agents_env_command(request),
         CliCommand::AgentsHelp => handle_agents_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
@@ -97,6 +98,15 @@ fn handle_agents_scan_command(request: AgentScanRequest) -> Result<i32> {
     };
 
     output::print_agent_scan_results(&scan);
+
+    Ok(0)
+}
+
+fn handle_agents_sync_command() -> Result<i32> {
+    let registry_path = config::default_user_agent_registry_path().context("could not resolve ARC agent registry path")?;
+    let report = agent::sync_agent_registry(&registry_path).context("could not sync ARC agent registry")?;
+
+    output::print_agent_sync_report(&report);
 
     Ok(0)
 }

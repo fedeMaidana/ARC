@@ -2,6 +2,10 @@
 
 use super::common::{TestFixture, assert_success, stdout};
 
+// ─── < Constants > ──────────────────────────────────────────────────
+
+const RUNTIME_SETTINGS_SOURCE: &str = "runtime defaults + agent registry + ARC_* environment";
+
 // ─── < Tests > ──────────────────────────────────────────────────────
 
 #[test]
@@ -15,7 +19,7 @@ fn settings_show_prints_runtime_settings() {
 
     assert!(stdout.contains("Runtime settings"));
     assert!(stdout.contains("source:"));
-    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+    assert!(stdout.contains(RUNTIME_SETTINGS_SOURCE));
     assert!(stdout.contains("Policy"));
     assert!(stdout.contains("Agents"));
     assert!(stdout.contains("Actions"));
@@ -36,7 +40,7 @@ fn config_show_still_works_as_compatibility_alias() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("Runtime settings"));
-    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+    assert!(stdout.contains(RUNTIME_SETTINGS_SOURCE));
 }
 
 #[test]
@@ -49,7 +53,7 @@ fn settings_path_prints_runtime_settings_source() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("Runtime settings source"));
-    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+    assert!(stdout.contains(RUNTIME_SETTINGS_SOURCE));
 }
 
 #[test]
@@ -62,7 +66,7 @@ fn config_path_still_works_as_compatibility_alias() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("Runtime settings source"));
-    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+    assert!(stdout.contains(RUNTIME_SETTINGS_SOURCE));
 }
 
 #[test]
@@ -75,7 +79,7 @@ fn settings_check_prints_success_for_runtime_settings() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("Runtime settings are valid"));
-    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+    assert!(stdout.contains(RUNTIME_SETTINGS_SOURCE));
 }
 
 #[test]
@@ -88,7 +92,7 @@ fn config_check_still_works_as_compatibility_alias() {
     let stdout = stdout(&output);
 
     assert!(stdout.contains("Runtime settings are valid"));
-    assert!(stdout.contains("runtime defaults + ARC_* environment"));
+    assert!(stdout.contains(RUNTIME_SETTINGS_SOURCE));
 }
 
 #[test]

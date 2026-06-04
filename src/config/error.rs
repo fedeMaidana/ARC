@@ -40,11 +40,27 @@ pub enum ConfigError {
         source: std::io::Error,
     },
 
-    #[error("failed to write policy file '{path}'")]
+    #[error("failed to read file '{path}'")]
+    Read {
+        path: String,
+
+        #[source]
+        source: std::io::Error,
+    },
+
+    #[error("failed to write file '{path}'")]
     Write {
         path: String,
 
         #[source]
         source: std::io::Error,
+    },
+
+    #[error("invalid JSON file '{path}'")]
+    Json {
+        path: String,
+
+        #[source]
+        source: serde_json::Error,
     },
 }
