@@ -22,25 +22,8 @@ fn agents_list_prints_builtin_sources() {
 }
 
 #[test]
-fn agents_scan_prints_known_agent_detection_results() {
-    let output = run_arc(&["agents", "scan"]);
-
-    assert_success(&output);
-
-    let stdout = stdout(&output);
-
-    assert!(stdout.contains("Agent scan"));
-    assert!(stdout.contains("opencode"));
-    assert!(stdout.contains("OpenCode"));
-    assert!(stdout.contains("claude-code"));
-    assert!(stdout.contains("Claude Code"));
-    assert!(stdout.contains("codex"));
-    assert!(stdout.contains("Codex"));
-}
-
-#[test]
-fn agents_scan_detects_known_agent_from_path() {
-    let mut fixture = TestFixture::new("agents-scan-detects-opencode");
+fn agents_scan_detects_known_agent_from_path_without_printing_missing_known_agents() {
+    let mut fixture = TestFixture::new("agents-scan-detects-opencode").without_system_path();
 
     let command_path = fixture.create_path_command("opencode");
     let output = fixture.run(&["agents", "scan"]);
@@ -49,10 +32,74 @@ fn agents_scan_detects_known_agent_from_path() {
 
     let stdout = stdout(&output);
 
+    assert!(stdout.contains("Agent scan"));
+    assert!(stdout.contains("Detected agents"));
     assert!(stdout.contains("opencode"));
     assert!(stdout.contains("OpenCode"));
     assert!(stdout.contains("command: opencode"));
     assert!(stdout.contains(&command_path.display().to_string()));
+
+    assert!(!stdout.contains("codex"));
+    assert!(!stdout.contains("status: not found"));
+}
+
+#[test]
+fn agents_scan_known_prints_missing_known_agents() {
+    let mut fixture = TestFixture::new("agents-scan-known").without_system_path();
+
+    let command_path = fixture.create_path_command("opencode");
+    let output = fixture.run(&["agents", "scan", "--known"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("opencode"));
+    assert!(stdout.contains("OpenCode"));
+    assert!(stdout.contains(&command_path.display().to_string()));
+
+    assert!(stdout.contains("Known agents not found"));
+    assert!(stdout.contains("claude-code"));
+    assert!(stdout.contains("Claude Code"));
+    assert!(stdout.contains("codex"));
+    assert!(stdout.contains("Codex"));
+    assert!(stdout.contains("status: not found"));
+}
+
+#[test]
+fn agents_scan_detects_possible_agent_candidates_from_path() {
+    let mut fixture = TestFixture::new("agents-scan-candidates").without_system_path();
+
+    let command_path = fixture.create_path_command("my-agent");
+    let output = fixture.run(&["agents", "scan"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("Possible agents"));
+    assert!(stdout.contains("my-agent"));
+    assert!(stdout.contains(&command_path.display().to_string()));
+    assert!(stdout.contains("command name contains \"agent\""));
+}
+
+#[test]
+fn agents_scan_detects_ai_token_candidates_without_matching_random_words() {
+    let mut fixture = TestFixture::new("agents-scan-ai-token").without_system_path();
+
+    let command_path = fixture.create_path_command("local-ai");
+    fixture.create_path_command("tail");
+
+    let output = fixture.run(&["agents", "scan"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("local-ai"));
+    assert!(stdout.contains(&command_path.display().to_string()));
+    assert!(stdout.contains("command name has token \"ai\""));
+    assert!(!stdout.contains("tail"));
 }
 
 #[test]

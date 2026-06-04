@@ -68,6 +68,11 @@ pub struct AgentEnvRequest {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AgentScanRequest {
+    pub include_missing_known_agents: bool,
+}
+
 // ─── < Enums > ──────────────────────────────────────────────────────
 
 pub enum CliCommand {
@@ -77,7 +82,7 @@ pub enum CliCommand {
     SettingsShow,
     SettingsHelp,
     AgentsList,
-    AgentsScan,
+    AgentsScan(AgentScanRequest),
     AgentsEnv(AgentEnvRequest),
     AgentsHelp,
     DecideJson,
@@ -128,13 +133,37 @@ impl CliCommand {
 
         match args[2].as_str() {
             "list" => Ok(Self::AgentsList),
-            "scan" => Ok(Self::AgentsScan),
+            "scan" => Self::parse_agents_scan_command(args),
             "env" => Self::parse_agents_env_command(args),
             "help" | "-h" | "--help" => Ok(Self::AgentsHelp),
             command => Err(CliError::UnknownAgentCommand {
                 command: command.to_string(),
             }),
         }
+    }
+
+    fn parse_agents_scan_command(args: &[String]) -> Result<Self, CliError> {
+        let mut include_missing_known_agents = false;
+        let mut index = 3;
+
+        while index < args.len() {
+            match args[index].as_str() {
+                "--known" => {
+                    include_missing_known_agents = true;
+                    index += 1;
+                }
+                "help" | "-h" | "--help" => return Ok(Self::AgentsHelp),
+                option => {
+                    return Err(CliError::UnknownAgentOption {
+                        option: option.to_string(),
+                    });
+                }
+            }
+        }
+
+        Ok(Self::AgentsScan(AgentScanRequest {
+            include_missing_known_agents,
+        }))
     }
 
     fn parse_agents_env_command(args: &[String]) -> Result<Self, CliError> {

@@ -1,6 +1,6 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::agent::AgentDiscovery;
+use crate::agent::{AgentCandidate, AgentDiscovery, AgentScan, MissingKnownAgent};
 use crate::config::{AgentSourceConfig, Config};
 use crate::ui;
 
@@ -35,20 +35,30 @@ pub fn print_agents(config: &Config) {
     println!("{}", ui::dim("Tip: start an agent with ARC_SOURCE=<agent-id> so ARC can audit where requests came from."));
 }
 
-pub fn print_agent_scan_results(discoveries: &[AgentDiscovery]) {
+pub fn print_agent_scan_results(scan: &AgentScan) {
     println!("{}", ui::section("Agent scan"));
+    println!("  {} {}", ui::bold("detected known agents"), scan.detected_agents().len());
+    println!("  {} {}", ui::bold("possible agents"), scan.candidate_agents().len());
 
-    let detected_count = discoveries.iter().filter(|discovery| discovery.is_detected()).count();
-
-    println!("  {} {detected_count}/{}", ui::bold("detected"), discoveries.len());
-    println!();
-
-    for discovery in discoveries {
-        print_agent_discovery(discovery);
+    if !scan.missing_known_agents().is_empty() {
+        println!("  {} {}", ui::bold("missing known agents"), scan.missing_known_agents().len());
     }
 
     println!();
-    println!("{}", ui::dim("Next: ARC will use these discoveries during init to register agents and install launcher shims."));
+
+    print_detected_agents(scan.detected_agents());
+
+    if !scan.missing_known_agents().is_empty() {
+        println!();
+        print_missing_known_agents(scan.missing_known_agents());
+    }
+
+    println!();
+    print_candidate_agents(scan.candidate_agents());
+
+    println!();
+    println!("{}", ui::dim("Known detected agents can be registered automatically during arc init."));
+    println!("{}", ui::dim("Possible agents require confirmation before ARC treats them as trusted agents."));
 }
 
 pub fn print_agent_env_exports(source: &AgentSourceConfig) {
@@ -65,18 +75,63 @@ pub fn print_agent_env_exports(source: &AgentSourceConfig) {
 
 // ─── < Private Functions > ──────────────────────────────────────────
 
-fn print_agent_discovery(discovery: &AgentDiscovery) {
-    if let Some(path) = discovery.path() {
-        println!("  {} {}", ui::green("✅"), ui::bold(discovery.id()));
-        println!("      name: {}", discovery.display_name());
-        println!("      command: {}", discovery.detected_command().unwrap_or("unknown"));
-        println!("      path: {}", path.display());
-    } else {
-        println!("  {} {}", ui::yellow("⚠️ "), ui::bold(discovery.id()));
-        println!("      name: {}", discovery.display_name());
-        println!("      commands checked: {}", discovery.command_names().join(", "));
-        println!("      status: not found");
+fn print_detected_agents(agents: &[AgentDiscovery]) {
+    println!("  {}", ui::bold("Detected agents"));
+
+    if agents.is_empty() {
+        println!("    {}", ui::dim("none"));
+        return;
     }
+
+    for agent in agents {
+        print_detected_agent(agent);
+    }
+}
+
+fn print_missing_known_agents(agents: &[MissingKnownAgent]) {
+    println!("  {}", ui::bold("Known agents not found"));
+
+    if agents.is_empty() {
+        println!("    {}", ui::dim("none"));
+        return;
+    }
+
+    for agent in agents {
+        print_missing_known_agent(agent);
+    }
+}
+
+fn print_candidate_agents(candidates: &[AgentCandidate]) {
+    println!("  {}", ui::bold("Possible agents"));
+
+    if candidates.is_empty() {
+        println!("    {}", ui::dim("none"));
+        return;
+    }
+
+    for candidate in candidates {
+        print_candidate_agent(candidate);
+    }
+}
+
+fn print_detected_agent(agent: &AgentDiscovery) {
+    println!("    {} {}", ui::green("✅"), ui::bold(agent.id()));
+    println!("      name: {}", agent.display_name());
+    println!("      command: {}", agent.detected_command());
+    println!("      path: {}", agent.path().display());
+}
+
+fn print_missing_known_agent(agent: &MissingKnownAgent) {
+    println!("    {} {}", ui::yellow("⚠️ "), ui::bold(agent.id()));
+    println!("      name: {}", agent.display_name());
+    println!("      commands checked: {}", agent.command_names().join(", "));
+    println!("      status: not found");
+}
+
+fn print_candidate_agent(candidate: &AgentCandidate) {
+    println!("    {} {}", ui::yellow("?"), ui::bold(candidate.command_name()));
+    println!("      path: {}", candidate.path().display());
+    println!("      reason: {}", candidate.reason());
 }
 
 fn format_agent_source_environment_entry(source: &AgentSourceConfig) -> String {

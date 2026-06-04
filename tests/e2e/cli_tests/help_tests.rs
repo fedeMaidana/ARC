@@ -26,6 +26,7 @@ fn help_command_prints_usage() {
 
     assert!(stdout.contains("Agents"));
     assert!(stdout.contains("arc agents scan"));
+    assert!(stdout.contains("arc agents scan --known"));
     assert!(stdout.contains("arc agents list"));
     assert!(stdout.contains("arc agents env <id>"));
 

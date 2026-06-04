@@ -3,7 +3,7 @@
 use anyhow::{Context, Result};
 
 use crate::agent;
-use crate::cli::{AgentEnvRequest, CliCommand};
+use crate::cli::{AgentEnvRequest, AgentScanRequest, CliCommand};
 use crate::config::{self, AgentSourceConfig};
 use crate::executor;
 use crate::json_api;
@@ -26,7 +26,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
         CliCommand::SettingsShow => handle_settings_show_command(),
         CliCommand::SettingsHelp => handle_settings_help_command(),
         CliCommand::AgentsList => handle_agents_list_command(),
-        CliCommand::AgentsScan => handle_agents_scan_command(),
+        CliCommand::AgentsScan(request) => handle_agents_scan_command(request),
         CliCommand::AgentsEnv(request) => handle_agents_env_command(request),
         CliCommand::AgentsHelp => handle_agents_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
@@ -89,10 +89,14 @@ fn handle_agents_list_command() -> Result<i32> {
     Ok(0)
 }
 
-fn handle_agents_scan_command() -> Result<i32> {
-    let discoveries = agent::scan_known_agents();
+fn handle_agents_scan_command(request: AgentScanRequest) -> Result<i32> {
+    let scan = if request.include_missing_known_agents {
+        agent::scan_known_agents()
+    } else {
+        agent::scan_installed_agents()
+    };
 
-    output::print_agent_scan_results(&discoveries);
+    output::print_agent_scan_results(&scan);
 
     Ok(0)
 }

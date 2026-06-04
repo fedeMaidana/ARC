@@ -22,7 +22,9 @@ pub fn print_usage() {
 
     println!("{}", ui::section("Agents"));
     println!("  {}", ui::bold("arc agents scan"));
-    println!("      {}", ui::dim("Detect known agent commands installed in PATH"));
+    println!("      {}", ui::dim("Detect installed known agents and possible agent candidates"));
+    println!("  {}", ui::bold("arc agents scan --known"));
+    println!("      {}", ui::dim("Also show known agents that were not found"));
     println!("  {}", ui::bold("arc agents list"));
     println!("      {}", ui::dim("Print configured agent sources"));
     println!("  {}", ui::bold("arc agents env <id> [--name <name>]"));
@@ -59,6 +61,7 @@ pub fn print_usage() {
     println!("  cargo run -q -- settings check");
     println!("  cargo run -q -- settings show");
     println!("  cargo run -q -- agents scan");
+    println!("  cargo run -q -- agents scan --known");
     println!("  cargo run -q -- agents list");
     println!("  cargo run -q -- agents env claude-code --name \"Claude Code\"");
     println!("  cargo run -q -- run ls -la");
@@ -87,7 +90,10 @@ pub fn print_settings_usage() {
 pub fn print_agents_usage() {
     println!("{}", ui::section("Agent usage"));
     println!("  {}", ui::bold("arc agents scan"));
-    println!("      {}", ui::dim("Detect known agent commands installed in PATH"));
+    println!("      {}", ui::dim("Detect installed known agents and possible agent candidates"));
+    println!();
+    println!("  {}", ui::bold("arc agents scan --known"));
+    println!("      {}", ui::dim("Also show known agents that were not found"));
     println!();
     println!("  {}", ui::bold("arc agents list"));
     println!("      {}", ui::dim("Show built-in and configured agent sources"));
@@ -95,7 +101,7 @@ pub fn print_agents_usage() {
     println!("  {}", ui::bold("arc agents env <id> [options]"));
     println!("      {}", ui::dim("Print shell exports for an agent source"));
     println!();
-    println!("  {}", ui::dim("Options:"));
+    println!("  {}", ui::dim("Options for arc agents env:"));
     println!("  --name <name>");
     println!("      {}", ui::dim("Human-friendly agent name"));
     println!("  --kind <kind>");
@@ -107,6 +113,7 @@ pub fn print_agents_usage() {
     println!();
     println!("  {}", ui::dim("Examples:"));
     println!("  arc agents scan");
+    println!("  arc agents scan --known");
     println!("  arc agents env claude-code --name \"Claude Code\"");
     println!("  arc agents env codex --name \"Codex\"");
     println!("  arc agents env personal-agent --name \"Personal Agent\" --kind custom");

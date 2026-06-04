@@ -27,6 +27,7 @@ pub struct TestFixture {
     root_dir: PathBuf,
     env_overrides: Vec<(String, String)>,
     path_prepend: Vec<PathBuf>,
+    use_system_path: bool,
 }
 
 impl TestFixture {
@@ -39,6 +40,7 @@ impl TestFixture {
             root_dir,
             env_overrides: Vec::new(),
             path_prepend: Vec::new(),
+            use_system_path: true,
         }
     }
 
@@ -48,6 +50,11 @@ impl TestFixture {
         fixture.env_overrides.push((key.to_string(), value.to_string()));
 
         fixture
+    }
+
+    pub fn without_system_path(mut self) -> Self {
+        self.use_system_path = false;
+        self
     }
 
     pub fn create_path_command(&mut self, name: &str) -> PathBuf {
@@ -104,7 +111,7 @@ impl TestFixture {
             .env_remove("ARC_SOURCE")
             .current_dir(&self.root_dir);
 
-        if let Some(path) = test_path(&self.path_prepend) {
+        if let Some(path) = test_path(&self.path_prepend, self.use_system_path) {
             command.env("PATH", path);
         }
 
@@ -155,15 +162,18 @@ fn unique_temp_dir(name: &str) -> PathBuf {
     env::temp_dir().join(format!("arc-e2e-{name}-{}-{timestamp}", std::process::id()))
 }
 
-fn test_path(path_prepend: &[PathBuf]) -> Option<std::ffi::OsString> {
-    if path_prepend.is_empty() {
+fn test_path(path_prepend: &[PathBuf], use_system_path: bool) -> Option<std::ffi::OsString> {
+    if path_prepend.is_empty() && use_system_path {
         return None;
     }
 
-    let existing_path = env::var_os("PATH").unwrap_or_default();
     let mut paths = path_prepend.to_vec();
 
-    paths.extend(env::split_paths(&existing_path));
+    if use_system_path {
+        let existing_path = env::var_os("PATH").unwrap_or_default();
+
+        paths.extend(env::split_paths(&existing_path));
+    }
 
     env::join_paths(paths).ok()
 }
