@@ -23,23 +23,68 @@ const KNOWN_AGENTS: &[KnownAgent] = &[
         display_name: "Codex",
         command_names: &["codex"],
     },
+    KnownAgent {
+        id: "gemini-cli",
+        display_name: "Gemini CLI",
+        command_names: &["gemini", "gemini-cli"],
+    },
+    KnownAgent {
+        id: "aider",
+        display_name: "Aider",
+        command_names: &["aider"],
+    },
+    KnownAgent {
+        id: "goose",
+        display_name: "Goose",
+        command_names: &["goose"],
+    },
+    KnownAgent {
+        id: "qwen-code",
+        display_name: "Qwen Code",
+        command_names: &["qwen", "qwen-code"],
+    },
+    KnownAgent {
+        id: "plandex",
+        display_name: "Plandex",
+        command_names: &["plandex", "pdx"],
+    },
+    KnownAgent {
+        id: "crush",
+        display_name: "Crush",
+        command_names: &["crush"],
+    },
+    KnownAgent {
+        id: "open-interpreter",
+        display_name: "Open Interpreter",
+        command_names: &["interpreter", "open-interpreter"],
+    },
 ];
 
 const CANDIDATE_NAME_HINTS: &[&str] = &[
     "agent",
     "assistant",
     "aider",
+    "amp",
+    "augment",
     "claude",
+    "cline",
     "codex",
     "copilot",
     "cursor",
     "devin",
     "gemini",
     "goose",
+    "interpreter",
+    "junie",
     "llm",
     "mcp",
+    "openhands",
     "openai",
     "opencode",
+    "plandex",
+    "qwen",
+    "roo",
+    "windsurf",
 ];
 
 const IGNORED_CANDIDATE_COMMANDS: &[&str] = &[
