@@ -45,6 +45,7 @@ pub fn run_doctor() -> Result<DoctorReport, ConfigError> {
         check_policy_file(&policy_path),
         check_agent_registry_file(&registry_path),
         check_registered_agents(registry.agents().len()),
+        check_registered_agent_real_paths(&shim_report, &launcher_dir, &runtime_shims_dir),
         check_launcher_shims(&shim_report),
         check_runtime_shims(&shim_report),
         check_launcher_dir_in_path(&launcher_dir),
@@ -108,6 +109,28 @@ fn check_registered_agents(agent_count: usize) -> DoctorCheck {
     }
 
     check_warn("registered agents", "no agents registered; run `arc init` or `arc agents sync`")
+}
+
+fn check_registered_agent_real_paths(report: &shims::ShimListReport, launcher_dir: &Path, runtime_shims_dir: &Path) -> DoctorCheck {
+    if report.launchers().is_empty() {
+        return check_warn("registered agent paths", "no registered agents to check");
+    }
+
+    let broken_paths = report
+        .launchers()
+        .iter()
+        .filter(|launcher| is_arc_managed_path(Path::new(launcher.real_path()), launcher_dir, runtime_shims_dir))
+        .map(|launcher| format!("{} points to ARC-managed path {}", launcher.command(), launcher.real_path()))
+        .collect::<Vec<_>>();
+
+    if broken_paths.is_empty() {
+        return check_pass("registered agent paths", "registered agents point to real binaries");
+    }
+
+    check_fail(
+        "registered agent paths",
+        format!("{}; run `arc agents sync` after removing ARC launcher/runtime directories from PATH", broken_paths.join("; ")),
+    )
 }
 
 fn check_launcher_shims(report: &shims::ShimListReport) -> DoctorCheck {
@@ -188,6 +211,10 @@ fn check_fail(name: &str, message: impl Into<String>) -> DoctorCheck {
         status: DoctorCheckStatus::Fail,
         message: message.into(),
     }
+}
+
+fn is_arc_managed_path(path: &Path, launcher_dir: &Path, runtime_shims_dir: &Path) -> bool {
+    path.starts_with(launcher_dir) || path.starts_with(runtime_shims_dir)
 }
 
 fn path_contains_directory(directory: &Path) -> bool {

@@ -129,6 +129,32 @@ fn agents_sync_persists_detected_known_agents_in_registry() {
 }
 
 #[test]
+fn agents_sync_ignores_arc_launcher_directory_when_discovering_agents() {
+    let mut fixture = TestFixture::new("agents-sync-ignores-arc-launchers").without_system_path();
+
+    let real_command_path = fixture.create_path_command("opencode");
+    let launcher_path = fixture.launcher_dir().join("opencode");
+
+    fs::create_dir_all(fixture.launcher_dir()).expect("launcher dir should be created");
+    fs::write(&launcher_path, "#!/usr/bin/env sh\nexit 99\n").expect("fake launcher should be written");
+    make_test_executable(&launcher_path);
+
+    let real_bin_dir = real_command_path.parent().expect("real command should have parent directory");
+
+    fixture.set_env("PATH", format!("{}:{}", fixture.launcher_dir().display(), real_bin_dir.display()));
+
+    let output = fixture.run(&["agents", "sync"]);
+
+    assert_success(&output);
+
+    let registry_content = fs::read_to_string(fixture.registry_path()).expect("registry file should exist");
+
+    assert!(registry_content.contains("\"id\": \"opencode\""));
+    assert!(registry_content.contains(&real_command_path.display().to_string()));
+    assert!(!registry_content.contains(&format!("\"path\": \"{}\"", launcher_path.display())));
+}
+
+#[test]
 fn init_syncs_detected_agents_into_registry() {
     let mut fixture = TestFixture::new("init-syncs-agents").without_system_path();
 
@@ -260,3 +286,19 @@ fn agents_env_rejects_invalid_kind() {
     assert!(stdout.contains("CLI error"));
     assert!(stdout.contains("invalid agent kind 'remote_magic'"));
 }
+
+#[cfg(unix)]
+fn make_test_executable(path: &std::path::Path) {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut permissions = fs::metadata(path)
+        .expect("test executable metadata should be readable")
+        .permissions();
+
+    permissions.set_mode(0o755);
+
+    fs::set_permissions(path, permissions).expect("test executable permissions should be updated");
+}
+
+#[cfg(not(unix))]
+fn make_test_executable(_path: &std::path::Path) {}

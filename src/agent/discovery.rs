@@ -341,16 +341,69 @@ fn path_directories() -> Vec<PathBuf> {
         return Vec::new();
     };
 
+    let ignored_directories = arc_managed_directories();
     let mut seen = HashSet::new();
     let mut directories = Vec::new();
 
     for directory in env::split_paths(&path) {
+        if is_arc_managed_directory(&directory, &ignored_directories) {
+            continue;
+        }
+
         if seen.insert(directory.clone()) {
             directories.push(directory);
         }
     }
 
     directories
+}
+
+fn arc_managed_directories() -> Vec<PathBuf> {
+    let mut directories = Vec::new();
+
+    if let Some(path) = optional_env_path("ARC_LAUNCHER_DIR") {
+        directories.push(path);
+    }
+
+    if let Some(path) = optional_env_path("ARC_RUNTIME_SHIMS_DIR") {
+        directories.push(path);
+    }
+
+    if let Ok(home) = env::var("HOME") {
+        let arc_data_dir = PathBuf::from(home).join(".local").join("share").join("arc");
+
+        directories.push(arc_data_dir.join("launchers"));
+        directories.push(arc_data_dir.join("runtime-shims"));
+    }
+
+    dedupe_paths(directories)
+}
+
+fn optional_env_path(name: &str) -> Option<PathBuf> {
+    env::var(name)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+}
+
+fn dedupe_paths(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut seen = HashSet::new();
+    let mut unique_paths = Vec::new();
+
+    for path in paths {
+        if seen.insert(path.clone()) {
+            unique_paths.push(path);
+        }
+    }
+
+    unique_paths
+}
+
+fn is_arc_managed_directory(directory: &Path, ignored_directories: &[PathBuf]) -> bool {
+    ignored_directories
+        .iter()
+        .any(|ignored_directory| directory == ignored_directory || directory.starts_with(ignored_directory))
 }
 
 fn is_executable_file(path: &Path) -> bool {
