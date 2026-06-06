@@ -7,7 +7,7 @@ use crate::ui;
 pub fn print_usage() {
     println!("{}", ui::section("Setup"));
     println!("  {}", ui::bold("arc init"));
-    println!("      {}", ui::dim("Create the default Rego policy file"));
+    println!("      {}", ui::dim("Create the default Rego policy and sync detected agents"));
     println!();
 
     println!("{}", ui::section("Runtime settings"));

@@ -3,24 +3,24 @@
 use std::error::Error as StdError;
 use std::path::Path;
 
-use crate::config::{Config, ConfigError, ConfigInitResult};
+use crate::config::{Config, ConfigError, ConfigInitResult, PolicyInitResult};
 use crate::ui;
 
 use super::shared::print_list;
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn print_policy_init_result(result: &ConfigInitResult) {
-    match result {
-        ConfigInitResult::Created(path) => {
-            println!("{}", ui::green("✅ Rego policy created"));
-            println!("  {} {}", ui::dim("path:"), path.display());
-        }
-        ConfigInitResult::AlreadyExists(path) => {
-            println!("{}", ui::yellow("⚠️  Rego policy already exists"));
-            println!("  {} {}", ui::dim("path:"), path.display());
-        }
-    }
+pub fn print_init_result(result: &ConfigInitResult) {
+    println!("{}", ui::green("✅ ARC initialized"));
+    println!();
+
+    println!("{}", ui::section("Policy"));
+    print_policy_init_result(result.policy());
+
+    println!("{}", ui::section("Agents"));
+    print_agent_registry_sync_summary(result);
+
+    println!("{}", ui::dim("Next: run `arc agents list` to review registered agents."));
 }
 
 pub fn print_settings_source_path(path: &Path) {
@@ -112,6 +112,33 @@ pub fn print_settings(config: &Config, path: &Path) {
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
+
+fn print_policy_init_result(result: &PolicyInitResult) {
+    match result {
+        PolicyInitResult::Created(path) => {
+            println!("  {}", ui::green("✅ Rego policy created"));
+            println!("  {} {}", ui::dim("path:"), path.display());
+        }
+        PolicyInitResult::AlreadyExists(path) => {
+            println!("  {}", ui::yellow("⚠️  Rego policy already exists"));
+            println!("  {} {}", ui::dim("path:"), path.display());
+        }
+    }
+
+    println!();
+}
+
+fn print_agent_registry_sync_summary(result: &ConfigInitResult) {
+    let report = result.agent_registry();
+
+    println!("  {}", ui::green("✅ Agent registry synced"));
+    println!("  {} {}", ui::dim("registry path:"), report.registry_path());
+    println!("  {} {}", ui::bold("detected"), report.detected_count());
+    println!("  {} {}", ui::bold("registered"), report.registered_count());
+    println!("  {} {}", ui::bold("added"), report.added_count());
+    println!("  {} {}", ui::bold("updated"), report.updated_count());
+    println!();
+}
 
 fn print_agent_sources(config: &Config) {
     println!("  {}", ui::bold("sources"));

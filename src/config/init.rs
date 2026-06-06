@@ -3,7 +3,9 @@
 use std::fs;
 use std::path::PathBuf;
 
-use super::{ConfigError, default_user_policy_path};
+use crate::agent::{AgentRegistrySyncReport, sync_agent_registry};
+
+use super::{ConfigError, default_user_agent_registry_path, default_user_policy_path};
 
 // ─── < Constants > ──────────────────────────────────────────────────
 
@@ -93,9 +95,16 @@ decision := {
 }
 "#;
 
+// ─── < Structs > ────────────────────────────────────────────────────
+
+pub struct ConfigInitResult {
+    policy: PolicyInitResult,
+    agent_registry: AgentRegistrySyncReport,
+}
+
 // ─── < Enums > ──────────────────────────────────────────────────────
 
-pub enum ConfigInitResult {
+pub enum PolicyInitResult {
     Created(PathBuf),
     AlreadyExists(PathBuf),
 }
@@ -103,10 +112,32 @@ pub enum ConfigInitResult {
 // ─── < Public Functions > ───────────────────────────────────────────
 
 pub fn init_default_config() -> Result<ConfigInitResult, ConfigError> {
+    let policy = init_default_policy()?;
+    let registry_path = default_user_agent_registry_path()?;
+    let agent_registry = sync_agent_registry(&registry_path)?;
+
+    Ok(ConfigInitResult { policy, agent_registry })
+}
+
+// ─── < Implementations > ────────────────────────────────────────────
+
+impl ConfigInitResult {
+    pub fn policy(&self) -> &PolicyInitResult {
+        &self.policy
+    }
+
+    pub fn agent_registry(&self) -> &AgentRegistrySyncReport {
+        &self.agent_registry
+    }
+}
+
+// ─── < Private Functions > ──────────────────────────────────────────
+
+fn init_default_policy() -> Result<PolicyInitResult, ConfigError> {
     let path = default_user_policy_path()?;
 
     if path.exists() {
-        return Ok(ConfigInitResult::AlreadyExists(path));
+        return Ok(PolicyInitResult::AlreadyExists(path));
     }
 
     let Some(parent_dir) = path.parent() else {
@@ -125,5 +156,5 @@ pub fn init_default_config() -> Result<ConfigInitResult, ConfigError> {
         source,
     })?;
 
-    Ok(ConfigInitResult::Created(path))
+    Ok(PolicyInitResult::Created(path))
 }

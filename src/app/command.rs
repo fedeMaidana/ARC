@@ -40,9 +40,9 @@ pub fn handle(command: CliCommand) -> Result<i32> {
 // ─── < Command Handlers > ───────────────────────────────────────────
 
 fn handle_init_command() -> Result<i32> {
-    let result = config::init_default_config().context("could not initialize ARC Rego policy")?;
+    let result = config::init_default_config().context("could not initialize ARC")?;
 
-    output::print_policy_init_result(&result);
+    output::print_init_result(&result);
 
     Ok(0)
 }

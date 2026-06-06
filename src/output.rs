@@ -14,7 +14,7 @@ mod usage;
 pub use self::agents::{print_agent_env_exports, print_agent_scan_results, print_agent_sync_report, print_agents};
 pub use self::banner::print_banner;
 pub use self::config::{
-    print_policy_init_result, print_settings, print_settings_check_error, print_settings_check_success, print_settings_source_path,
+    print_init_result, print_settings, print_settings_check_error, print_settings_check_success, print_settings_source_path,
 };
 pub use self::decision::print_decision;
 pub use self::error::{print_app_error, print_cli_error};

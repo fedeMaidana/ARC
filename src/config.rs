@@ -11,7 +11,7 @@ mod validation;
 // ─── < Public Exports > ─────────────────────────────────────────────
 
 pub use self::error::ConfigError;
-pub use self::init::{ConfigInitResult, init_default_config};
+pub use self::init::{ConfigInitResult, PolicyInitResult, init_default_config};
 pub use self::loader::{load_from_default_locations, load_runtime_config};
 pub use self::model::{
     ActionsConfig, AgentSourceConfig, AgentsConfig, AuditConfig, Config, ConsoleCommandRule, ConsoleConfig, ExecutionConfig,

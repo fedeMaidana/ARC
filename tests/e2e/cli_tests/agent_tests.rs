@@ -129,6 +129,30 @@ fn agents_sync_persists_detected_known_agents_in_registry() {
 }
 
 #[test]
+fn init_syncs_detected_agents_into_registry() {
+    let mut fixture = TestFixture::new("init-syncs-agents").without_system_path();
+
+    let command_path = fixture.create_path_command("opencode");
+    let output = fixture.run(&["init"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("ARC initialized"));
+    assert!(stdout.contains("Policy"));
+    assert!(stdout.contains("Agents"));
+    assert!(stdout.contains("Agent registry synced"));
+
+    let registry_content = fs::read_to_string(fixture.registry_path()).expect("registry file should exist");
+
+    assert!(registry_content.contains("\"id\": \"opencode\""));
+    assert!(registry_content.contains("\"display_name\": \"OpenCode\""));
+    assert!(registry_content.contains("\"command\": \"opencode\""));
+    assert!(registry_content.contains(&command_path.display().to_string()));
+}
+
+#[test]
 fn agents_list_loads_sources_from_internal_registry() {
     let mut fixture = TestFixture::new("agents-list-registry").without_system_path();
 
