@@ -16,8 +16,9 @@ pub fn print_shims_path(launcher_dir: &Path, runtime_shims_dir: &Path) {
 }
 
 pub fn print_shims_install_report(report: &ShimInstallReport) {
-    println!("{}", ui::green("✅ ARC launcher shims installed"));
+    println!("{}", ui::green("✅ ARC shims installed"));
     println!("  {} {}", ui::bold("launcher dir"), report.launcher_dir().display());
+    println!("  {} {}", ui::bold("runtime shims dir"), report.runtime_shims_dir().display());
     println!();
 
     println!("{}", ui::section("Launchers"));
@@ -26,14 +27,21 @@ pub fn print_shims_install_report(report: &ShimInstallReport) {
         println!("  {}", ui::dim("none"));
         println!();
         println!("{}", ui::dim("Run `arc init` or `arc agents sync` first to register detected agents."));
-        return;
+    } else {
+        for launcher in report.launchers() {
+            println!("  - {}", ui::bold(launcher.command()));
+            println!("    agent: {}", launcher.agent_id());
+            println!("    shim: {}", launcher.shim_path().display());
+            println!("    real: {}", launcher.real_path());
+        }
     }
 
-    for launcher in report.launchers() {
-        println!("  - {}", ui::bold(launcher.command()));
-        println!("    agent: {}", launcher.agent_id());
-        println!("    shim: {}", launcher.shim_path().display());
-        println!("    real: {}", launcher.real_path());
+    println!();
+    println!("{}", ui::section("Runtime shims"));
+
+    for shim in report.runtime_shims() {
+        println!("  - {}", ui::bold(shim.command()));
+        println!("    shim: {}", shim.shim_path().display());
     }
 
     println!();
@@ -42,28 +50,45 @@ pub fn print_shims_install_report(report: &ShimInstallReport) {
 }
 
 pub fn print_shims_list_report(report: &ShimListReport) {
-    println!("{}", ui::section("ARC launcher shims"));
+    println!("{}", ui::section("ARC shims"));
     println!("  {} {}", ui::bold("launcher dir"), report.launcher_dir().display());
+    println!("  {} {}", ui::bold("runtime shims dir"), report.runtime_shims_dir().display());
     println!();
+
+    println!("{}", ui::section("Launchers"));
 
     if report.launchers().is_empty() {
         println!("  {}", ui::dim("none"));
         println!();
         println!("{}", ui::dim("Run `arc init` or `arc agents sync` first to register detected agents."));
-        return;
+    } else {
+        for launcher in report.launchers() {
+            let status = if launcher.installed() {
+                ui::green("installed")
+            } else {
+                ui::yellow("missing")
+            };
+
+            println!("  - {}", ui::bold(launcher.command()));
+            println!("    agent: {}", launcher.agent_id());
+            println!("    status: {status}");
+            println!("    shim: {}", launcher.shim_path().display());
+            println!("    real: {}", launcher.real_path());
+        }
     }
 
-    for launcher in report.launchers() {
-        let status = if launcher.installed() {
+    println!();
+    println!("{}", ui::section("Runtime shims"));
+
+    for shim in report.runtime_shims() {
+        let status = if shim.installed() {
             ui::green("installed")
         } else {
             ui::yellow("missing")
         };
 
-        println!("  - {}", ui::bold(launcher.command()));
-        println!("    agent: {}", launcher.agent_id());
+        println!("  - {}", ui::bold(shim.command()));
         println!("    status: {status}");
-        println!("    shim: {}", launcher.shim_path().display());
-        println!("    real: {}", launcher.real_path());
+        println!("    shim: {}", shim.shim_path().display());
     }
 }

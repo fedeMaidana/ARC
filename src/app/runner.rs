@@ -17,6 +17,7 @@ enum OutputMode {
     Human,
     Json,
     Tui,
+    Internal,
 }
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -52,18 +53,20 @@ impl OutputMode {
             Self::Json
         } else if is_interactive_command(args) {
             Self::Tui
+        } else if is_internal_command(args) {
+            Self::Internal
         } else {
             Self::Human
         }
     }
 
     fn should_print_banner(self) -> bool {
-        matches!(self, Self::Human)
+        matches!(self, Self::Human) && !no_banner_requested()
     }
 
     fn print_error(self, error: &anyhow::Error) {
         match self {
-            Self::Human | Self::Tui => output::print_app_error(error),
+            Self::Human | Self::Tui | Self::Internal => output::print_app_error(error),
             Self::Json => json::print_error(error),
         }
     }
@@ -91,4 +94,12 @@ fn is_json_decide_command(args: &[String]) -> bool {
 
 fn is_interactive_command(args: &[String]) -> bool {
     args.len() >= 2 && matches!(args[1].as_str(), "monitor" | "tui")
+}
+
+fn is_internal_command(args: &[String]) -> bool {
+    args.len() >= 2 && args[1] == "__arc-shim"
+}
+
+fn no_banner_requested() -> bool {
+    matches!(env::var("ARC_NO_BANNER").ok().as_deref(), Some("1" | "true" | "yes" | "on"))
 }

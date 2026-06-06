@@ -35,6 +35,15 @@ pub enum CliError {
     #[error("unknown shims command '{command}'")]
     UnknownShimsCommand { command: String },
 
+    #[error("missing internal shim command")]
+    MissingInternalShimCommand,
+
+    #[error("unknown internal shim command '{command}'")]
+    UnknownInternalShimCommand { command: String },
+
+    #[error("missing shell name for internal shell shim")]
+    MissingInternalShellShimName,
+
     #[error("missing agent source id")]
     MissingAgentSourceId,
 
@@ -79,6 +88,12 @@ pub struct AgentScanRequest {
     pub include_missing_known_agents: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShellShimRequest {
+    pub shell: String,
+    pub args: Vec<String>,
+}
+
 // ─── < Enums > ──────────────────────────────────────────────────────
 
 pub enum CliCommand {
@@ -96,6 +111,7 @@ pub enum CliCommand {
     ShimsList,
     ShimsPath,
     ShimsHelp,
+    InternalShellShim(ShellShimRequest),
     DecideJson,
     Tui,
     PolicyRequest(Request),
@@ -116,6 +132,7 @@ impl CliCommand {
             "settings" | "config" => Self::parse_runtime_settings_command(args),
             "agents" => Self::parse_agents_command(args),
             "shims" => Self::parse_shims_command(args),
+            "__arc-shim" => Self::parse_internal_shim_command(args),
             "decide" => Self::parse_decide_command(args),
             "monitor" | "tui" => Ok(Self::Tui),
             _ => Self::parse_policy_request(args),
@@ -169,6 +186,30 @@ impl CliCommand {
                 command: command.to_string(),
             }),
         }
+    }
+
+    fn parse_internal_shim_command(args: &[String]) -> Result<Self, CliError> {
+        if args.len() < 3 {
+            return Err(CliError::MissingInternalShimCommand);
+        }
+
+        match args[2].as_str() {
+            "shell" => Self::parse_internal_shell_shim_command(args),
+            command => Err(CliError::UnknownInternalShimCommand {
+                command: command.to_string(),
+            }),
+        }
+    }
+
+    fn parse_internal_shell_shim_command(args: &[String]) -> Result<Self, CliError> {
+        if args.len() < 4 {
+            return Err(CliError::MissingInternalShellShimName);
+        }
+
+        Ok(Self::InternalShellShim(ShellShimRequest {
+            shell: args[3].clone(),
+            args: args[4..].to_vec(),
+        }))
     }
 
     fn parse_agents_scan_command(args: &[String]) -> Result<Self, CliError> {
