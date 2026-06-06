@@ -36,6 +36,7 @@ pub fn handle(command: CliCommand) -> Result<i32> {
         CliCommand::ShimsInstall => handle_shims_install_command(),
         CliCommand::ShimsList => handle_shims_list_command(),
         CliCommand::ShimsPath => handle_shims_path_command(),
+        CliCommand::ShimsActivate => handle_shims_activate_command(),
         CliCommand::ShimsHelp => handle_shims_help_command(),
         CliCommand::InternalShellShim(request) => handle_internal_shell_shim_command(request),
         CliCommand::DecideJson => handle_decide_json_command(),
@@ -175,6 +176,15 @@ fn handle_shims_path_command() -> Result<i32> {
     let runtime_shims_dir = config::default_user_runtime_shims_dir().context("could not resolve ARC runtime shims directory")?;
 
     output::print_shims_path(&launcher_dir, &runtime_shims_dir);
+
+    Ok(0)
+}
+
+fn handle_shims_activate_command() -> Result<i32> {
+    let launcher_dir = config::default_user_launcher_dir().context("could not resolve ARC launcher directory")?;
+    let report = shims::activate_shell_profile(&launcher_dir).context("could not activate ARC launcher shims in shell profile")?;
+
+    output::print_shims_activation_report(&report);
 
     Ok(0)
 }

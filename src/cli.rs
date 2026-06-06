@@ -111,6 +111,7 @@ pub enum CliCommand {
     ShimsInstall,
     ShimsList,
     ShimsPath,
+    ShimsActivate,
     ShimsHelp,
     InternalShellShim(ShellShimRequest),
     DecideJson,
@@ -183,6 +184,7 @@ impl CliCommand {
             "install" => Ok(Self::ShimsInstall),
             "list" => Ok(Self::ShimsList),
             "path" => Ok(Self::ShimsPath),
+            "activate" => Ok(Self::ShimsActivate),
             "help" | "-h" | "--help" => Ok(Self::ShimsHelp),
             command => Err(CliError::UnknownShimsCommand {
                 command: command.to_string(),

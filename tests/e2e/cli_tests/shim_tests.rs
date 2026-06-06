@@ -101,6 +101,47 @@ fn shims_list_reports_missing_and_installed_shims() {
 }
 
 #[test]
+fn shims_activate_writes_launcher_path_to_shell_profile() {
+    let fixture = TestFixture::new("shims-activate");
+
+    let output = fixture.run(&["shims", "activate"]);
+
+    assert_success(&output);
+
+    let stdout = stdout(&output);
+
+    assert!(stdout.contains("ARC shell profile activated"));
+    assert!(stdout.contains(&fixture.shell_profile_path().display().to_string()));
+    assert!(stdout.contains(&fixture.launcher_dir().display().to_string()));
+
+    let profile_content = fs::read_to_string(fixture.shell_profile_path()).expect("shell profile should exist");
+
+    assert!(profile_content.contains("# >>> ARC shims >>>"));
+    assert!(profile_content.contains("# <<< ARC shims <<<"));
+    assert!(profile_content.contains(&format!("export PATH='{}':\"$PATH\"", fixture.launcher_dir().display())));
+}
+
+#[test]
+fn shims_activate_is_idempotent() {
+    let fixture = TestFixture::new("shims-activate-idempotent");
+
+    let first_output = fixture.run(&["shims", "activate"]);
+    assert_success(&first_output);
+
+    let second_output = fixture.run(&["shims", "activate"]);
+    assert_success(&second_output);
+
+    let stdout = stdout(&second_output);
+
+    assert!(stdout.contains("unchanged"));
+
+    let profile_content = fs::read_to_string(fixture.shell_profile_path()).expect("shell profile should exist");
+    let marker_count = profile_content.matches("# >>> ARC shims >>>").count();
+
+    assert_eq!(marker_count, 1);
+}
+
+#[test]
 fn internal_shell_shim_routes_simple_shell_command_through_arc() {
     let output = run_arc(&["__arc-shim", "shell", "sh", "-c", "echo hola"]);
 

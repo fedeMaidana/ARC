@@ -13,6 +13,9 @@ use crate::config::ConfigError;
 const RUNTIME_SHELL_SHIMS: &[&str] = &["bash", "sh"];
 const UNSUPPORTED_SHELL_OPERATORS: &[char] = &['|', ';', '&', '<', '>', '`', '$', '(', ')', '\n', '\r'];
 
+const ARC_PROFILE_BLOCK_START: &str = "# >>> ARC shims >>>";
+const ARC_PROFILE_BLOCK_END: &str = "# <<< ARC shims <<<";
+
 // ─── < Structs > ────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +32,13 @@ pub struct ShimListReport {
     runtime_shims_dir: PathBuf,
     launchers: Vec<LauncherShimStatus>,
     runtime_shims: Vec<RuntimeShimStatus>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShellActivationReport {
+    profile_path: PathBuf,
+    launcher_dir: PathBuf,
+    status: ShellActivationStatus,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,6 +69,15 @@ pub struct RuntimeShimStatus {
     command: String,
     shim_path: PathBuf,
     installed: bool,
+}
+
+// ─── < Enums > ──────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShellActivationStatus {
+    Created,
+    Updated,
+    Unchanged,
 }
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -172,6 +191,42 @@ pub fn list_arc_shims(registry_path: &Path, launcher_dir: &Path, runtime_shims_d
     })
 }
 
+pub fn activate_shell_profile(launcher_dir: &Path) -> Result<ShellActivationReport, ConfigError> {
+    let profile_path = shell_profile_path()?;
+
+    if let Some(parent_dir) = profile_path.parent().filter(|path| !path.as_os_str().is_empty()) {
+        fs::create_dir_all(parent_dir).map_err(|source| ConfigError::CreateDir {
+            path: parent_dir.display().to_string(),
+            source,
+        })?;
+    }
+
+    let existing_content = if profile_path.exists() {
+        fs::read_to_string(&profile_path).map_err(|source| ConfigError::Read {
+            path: profile_path.display().to_string(),
+            source,
+        })?
+    } else {
+        String::new()
+    };
+
+    let block = shell_profile_block(launcher_dir);
+    let (new_content, status) = update_shell_profile_content(&existing_content, &block);
+
+    if status != ShellActivationStatus::Unchanged {
+        fs::write(&profile_path, new_content).map_err(|source| ConfigError::Write {
+            path: profile_path.display().to_string(),
+            source,
+        })?;
+    }
+
+    Ok(ShellActivationReport {
+        profile_path,
+        launcher_dir: launcher_dir.to_path_buf(),
+        status,
+    })
+}
+
 pub fn execute_shell_runtime_shim(shell: &str, args: &[String]) -> i32 {
     let Some(command_index) = shell_command_string_index(args) else {
         return exec_real_shell(shell, args);
@@ -237,6 +292,20 @@ impl ShimListReport {
 
     pub fn runtime_shims(&self) -> &[RuntimeShimStatus] {
         &self.runtime_shims
+    }
+}
+
+impl ShellActivationReport {
+    pub fn profile_path(&self) -> &Path {
+        &self.profile_path
+    }
+
+    pub fn launcher_dir(&self) -> &Path {
+        &self.launcher_dir
+    }
+
+    pub fn status(&self) -> ShellActivationStatus {
+        self.status
     }
 }
 
@@ -355,6 +424,89 @@ export ARC_NO_BANNER=1
 exec "$ARC_BIN" __arc-shim shell {command} "$@"
 "#
     )
+}
+
+fn shell_profile_path() -> Result<PathBuf, ConfigError> {
+    if let Some(path) = env::var_os("ARC_SHELL_PROFILE_PATH")
+        .map(PathBuf::from)
+        .filter(|path| !path.as_os_str().is_empty())
+    {
+        return Ok(path);
+    }
+
+    let home = env::var("HOME").map_err(|source| ConfigError::MissingHome { source })?;
+    let shell = env::var("SHELL").unwrap_or_default();
+
+    if shell.ends_with("zsh") {
+        return Ok(PathBuf::from(home).join(".zshrc"));
+    }
+
+    if shell.ends_with("bash") {
+        return Ok(PathBuf::from(home).join(".bashrc"));
+    }
+
+    Ok(PathBuf::from(home).join(".profile"))
+}
+
+fn shell_profile_block(launcher_dir: &Path) -> String {
+    format!(
+        "{ARC_PROFILE_BLOCK_START}\n# Added by ARC. Routes registered agent commands through ARC launchers.\nexport PATH={}:\"$PATH\"\n{ARC_PROFILE_BLOCK_END}\n",
+        shell_single_quote(&launcher_dir.display().to_string())
+    )
+}
+
+fn update_shell_profile_content(content: &str, block: &str) -> (String, ShellActivationStatus) {
+    if content.trim().is_empty() {
+        return (block.to_string(), ShellActivationStatus::Created);
+    }
+
+    let Some(start_index) = content.find(ARC_PROFILE_BLOCK_START) else {
+        return (append_shell_profile_block(content, block), ShellActivationStatus::Updated);
+    };
+
+    let Some(relative_end_index) = content[start_index..].find(ARC_PROFILE_BLOCK_END) else {
+        return (append_shell_profile_block(content, block), ShellActivationStatus::Updated);
+    };
+
+    let block_end_index = start_index + relative_end_index + ARC_PROFILE_BLOCK_END.len();
+    let replacement_end_index = consume_trailing_line_ending(content, block_end_index);
+
+    let mut new_content = String::new();
+
+    new_content.push_str(&content[..start_index]);
+    new_content.push_str(block);
+    new_content.push_str(&content[replacement_end_index..]);
+
+    if new_content == content {
+        (content.to_string(), ShellActivationStatus::Unchanged)
+    } else {
+        (new_content, ShellActivationStatus::Updated)
+    }
+}
+
+fn consume_trailing_line_ending(content: &str, index: usize) -> usize {
+    if content[index..].starts_with("\r\n") {
+        return index + 2;
+    }
+
+    if content[index..].starts_with('\n') {
+        return index + 1;
+    }
+
+    index
+}
+
+fn append_shell_profile_block(content: &str, block: &str) -> String {
+    let mut new_content = content.to_string();
+
+    if !new_content.ends_with('\n') {
+        new_content.push('\n');
+    }
+
+    new_content.push('\n');
+    new_content.push_str(block);
+
+    new_content
 }
 
 fn shell_single_quote(value: &str) -> String {

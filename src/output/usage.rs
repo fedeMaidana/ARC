@@ -44,6 +44,8 @@ pub fn print_usage() {
     println!("      {}", ui::dim("Install launcher shims for registered agents"));
     println!("  {}", ui::bold("arc shims list"));
     println!("      {}", ui::dim("Show registered launcher shim status"));
+    println!("  {}", ui::bold("arc shims activate"));
+    println!("      {}", ui::dim("Add ARC launchers to your shell profile"));
     println!("  {}", ui::bold("arc shims help"));
     println!("      {}", ui::dim("Show shim command usage"));
     println!();
@@ -86,6 +88,7 @@ pub fn print_usage() {
     println!("  cargo run -q -- shims path");
     println!("  cargo run -q -- shims install");
     println!("  cargo run -q -- shims list");
+    println!("  cargo run -q -- shims activate");
     println!("  cargo run -q -- agents env claude-code --name \"Claude Code\"");
     println!("  cargo run -q -- run ls -la");
     println!("  cargo run -q -- check run rm -rf /");
@@ -162,8 +165,12 @@ pub fn print_shims_usage() {
     println!("  {}", ui::bold("arc shims list"));
     println!("      {}", ui::dim("Show registered launcher shim status"));
     println!();
+    println!("  {}", ui::bold("arc shims activate"));
+    println!("      {}", ui::dim("Add ARC launchers to your shell profile"));
+    println!();
     println!("  {}", ui::dim("Examples:"));
     println!("  arc init");
     println!("  arc shims install");
     println!("  arc shims list");
+    println!("  arc shims activate");
 }

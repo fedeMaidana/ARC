@@ -37,6 +37,7 @@ fn help_command_prints_usage() {
     assert!(stdout.contains("arc shims path"));
     assert!(stdout.contains("arc shims install"));
     assert!(stdout.contains("arc shims list"));
+    assert!(stdout.contains("arc shims activate"));
 
     assert!(stdout.contains("Policy"));
     assert!(stdout.contains("arc run <command> [args...]"));

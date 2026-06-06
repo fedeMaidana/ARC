@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use crate::shims::{ShimInstallReport, ShimListReport};
+use crate::shims::{ShellActivationReport, ShellActivationStatus, ShimInstallReport, ShimListReport};
 use crate::ui;
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -91,4 +91,22 @@ pub fn print_shims_list_report(report: &ShimListReport) {
         println!("    status: {status}");
         println!("    shim: {}", shim.shim_path().display());
     }
+}
+
+pub fn print_shims_activation_report(report: &ShellActivationReport) {
+    let status = match report.status() {
+        ShellActivationStatus::Created => ui::green("created"),
+        ShellActivationStatus::Updated => ui::green("updated"),
+        ShellActivationStatus::Unchanged => ui::yellow("unchanged"),
+    };
+
+    println!("{}", ui::green("✅ ARC shell profile activated"));
+    println!("  {} {}", ui::bold("profile"), report.profile_path().display());
+    println!("  {} {}", ui::bold("launcher dir"), report.launcher_dir().display());
+    println!("  {} {status}", ui::bold("status"));
+    println!();
+    println!("{}", ui::dim("Restart your shell or run:"));
+    println!("  source {}", report.profile_path().display());
+    println!();
+    println!("{}", ui::dim("Then run `arc doctor` again."));
 }

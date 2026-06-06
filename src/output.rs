@@ -22,5 +22,5 @@ pub use self::decision::print_decision;
 pub use self::doctor::print_doctor_report;
 pub use self::error::{print_app_error, print_cli_error};
 pub use self::execution::print_execution_report;
-pub use self::shims::{print_shims_install_report, print_shims_list_report, print_shims_path};
+pub use self::shims::{print_shims_activation_report, print_shims_install_report, print_shims_list_report, print_shims_path};
 pub use self::usage::{print_agents_usage, print_settings_usage, print_shims_usage, print_usage};

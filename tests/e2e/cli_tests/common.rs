@@ -16,6 +16,7 @@ pub fn run_arc(args: &[&str]) -> Output {
     let registry_path = root_dir.join("agents.json");
     let launcher_dir = root_dir.join("launchers");
     let runtime_shims_dir = root_dir.join("runtime-shims");
+    let shell_profile_path = root_dir.join("shell-profile");
 
     let mut command = Command::new(env!("CARGO_BIN_EXE_arc"));
 
@@ -25,6 +26,7 @@ pub fn run_arc(args: &[&str]) -> Output {
         .env("ARC_AGENT_REGISTRY_PATH", registry_path)
         .env("ARC_LAUNCHER_DIR", launcher_dir)
         .env("ARC_RUNTIME_SHIMS_DIR", runtime_shims_dir)
+        .env("ARC_SHELL_PROFILE_PATH", shell_profile_path)
         .env_remove("ARC_AGENT_SOURCES")
         .env_remove("ARC_SOURCE");
 
@@ -70,6 +72,10 @@ impl TestFixture {
 
     pub fn runtime_shims_dir(&self) -> PathBuf {
         self.root_dir.join("runtime-shims")
+    }
+
+    pub fn shell_profile_path(&self) -> PathBuf {
+        self.root_dir.join("shell-profile")
     }
 
     pub fn set_env(&mut self, key: &str, value: impl Into<String>) {
@@ -134,6 +140,7 @@ impl TestFixture {
             .env("ARC_AGENT_REGISTRY_PATH", self.registry_path())
             .env("ARC_LAUNCHER_DIR", self.launcher_dir())
             .env("ARC_RUNTIME_SHIMS_DIR", self.runtime_shims_dir())
+            .env("ARC_SHELL_PROFILE_PATH", self.shell_profile_path())
             .env_remove("ARC_AGENT_SOURCES")
             .env_remove("ARC_SOURCE")
             .current_dir(&self.root_dir);
