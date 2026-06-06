@@ -12,13 +12,19 @@ use serde_json::Value;
 // ─── < Public Helpers: Commands > ───────────────────────────────────
 
 pub fn run_arc(args: &[&str]) -> Output {
-    let registry_path = env::temp_dir().join(format!("arc-e2e-run-{}.agents.json", std::process::id()));
+    let root_dir = env::temp_dir().join(format!("arc-e2e-run-{}-{}", std::process::id(), unique_suffix()));
+    let registry_path = root_dir.join("agents.json");
+    let launcher_dir = root_dir.join("launchers");
+    let runtime_shims_dir = root_dir.join("runtime-shims");
+
     let mut command = Command::new(env!("CARGO_BIN_EXE_arc"));
 
     command
         .args(args)
         .env("ARC_AUDIT_ENABLED", "false")
         .env("ARC_AGENT_REGISTRY_PATH", registry_path)
+        .env("ARC_LAUNCHER_DIR", launcher_dir)
+        .env("ARC_RUNTIME_SHIMS_DIR", runtime_shims_dir)
         .env_remove("ARC_AGENT_SOURCES")
         .env_remove("ARC_SOURCE");
 
@@ -56,6 +62,14 @@ impl TestFixture {
 
     pub fn registry_path(&self) -> PathBuf {
         self.root_dir.join("agents.json")
+    }
+
+    pub fn launcher_dir(&self) -> PathBuf {
+        self.root_dir.join("launchers")
+    }
+
+    pub fn runtime_shims_dir(&self) -> PathBuf {
+        self.root_dir.join("runtime-shims")
     }
 
     pub fn set_env(&mut self, key: &str, value: impl Into<String>) {
@@ -118,6 +132,8 @@ impl TestFixture {
             .env("ARC_POLICY_ENGINE", "native")
             .env("ARC_EXECUTION_WORKING_DIRECTORY", ".")
             .env("ARC_AGENT_REGISTRY_PATH", self.registry_path())
+            .env("ARC_LAUNCHER_DIR", self.launcher_dir())
+            .env("ARC_RUNTIME_SHIMS_DIR", self.runtime_shims_dir())
             .env_remove("ARC_AGENT_SOURCES")
             .env_remove("ARC_SOURCE")
             .current_dir(&self.root_dir);
@@ -165,12 +181,14 @@ pub fn json_stdout(output: &Output) -> Value {
 // ─── < Private Helpers > ────────────────────────────────────────────
 
 fn unique_temp_dir(name: &str) -> PathBuf {
-    let timestamp = SystemTime::now()
+    env::temp_dir().join(format!("arc-e2e-{name}-{}-{}", std::process::id(), unique_suffix()))
+}
+
+fn unique_suffix() -> u128 {
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system time should be after unix epoch")
-        .as_nanos();
-
-    env::temp_dir().join(format!("arc-e2e-{name}-{}-{timestamp}", std::process::id()))
+        .as_nanos()
 }
 
 fn test_path(path_prepend: &[PathBuf], use_system_path: bool) -> Option<std::ffi::OsString> {

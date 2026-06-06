@@ -14,5 +14,6 @@ pub mod output;
 pub mod policy;
 pub mod request;
 pub mod resource;
+pub mod shims;
 pub mod tui;
 pub mod ui;

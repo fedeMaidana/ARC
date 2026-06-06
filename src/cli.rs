@@ -29,6 +29,12 @@ pub enum CliError {
     #[error("unknown agent command '{command}'")]
     UnknownAgentCommand { command: String },
 
+    #[error("missing shims command")]
+    MissingShimsCommand,
+
+    #[error("unknown shims command '{command}'")]
+    UnknownShimsCommand { command: String },
+
     #[error("missing agent source id")]
     MissingAgentSourceId,
 
@@ -86,6 +92,10 @@ pub enum CliCommand {
     AgentsSync,
     AgentsEnv(AgentEnvRequest),
     AgentsHelp,
+    ShimsInstall,
+    ShimsList,
+    ShimsPath,
+    ShimsHelp,
     DecideJson,
     Tui,
     PolicyRequest(Request),
@@ -105,6 +115,7 @@ impl CliCommand {
             "init" => Ok(Self::Init),
             "settings" | "config" => Self::parse_runtime_settings_command(args),
             "agents" => Self::parse_agents_command(args),
+            "shims" => Self::parse_shims_command(args),
             "decide" => Self::parse_decide_command(args),
             "monitor" | "tui" => Ok(Self::Tui),
             _ => Self::parse_policy_request(args),
@@ -139,6 +150,22 @@ impl CliCommand {
             "env" => Self::parse_agents_env_command(args),
             "help" | "-h" | "--help" => Ok(Self::AgentsHelp),
             command => Err(CliError::UnknownAgentCommand {
+                command: command.to_string(),
+            }),
+        }
+    }
+
+    fn parse_shims_command(args: &[String]) -> Result<Self, CliError> {
+        if args.len() < 3 {
+            return Err(CliError::MissingShimsCommand);
+        }
+
+        match args[2].as_str() {
+            "install" => Ok(Self::ShimsInstall),
+            "list" => Ok(Self::ShimsList),
+            "path" => Ok(Self::ShimsPath),
+            "help" | "-h" | "--help" => Ok(Self::ShimsHelp),
+            command => Err(CliError::UnknownShimsCommand {
                 command: command.to_string(),
             }),
         }

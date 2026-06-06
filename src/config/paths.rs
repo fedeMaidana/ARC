@@ -25,6 +25,22 @@ pub fn default_user_agent_registry_path() -> Result<PathBuf, ConfigError> {
     Ok(default_user_data_dir()?.join("agents.json"))
 }
 
+pub fn default_user_launcher_dir() -> Result<PathBuf, ConfigError> {
+    if let Some(path) = optional_env_path("ARC_LAUNCHER_DIR") {
+        return Ok(path);
+    }
+
+    Ok(default_user_data_dir()?.join("launchers"))
+}
+
+pub fn default_user_runtime_shims_dir() -> Result<PathBuf, ConfigError> {
+    if let Some(path) = optional_env_path("ARC_RUNTIME_SHIMS_DIR") {
+        return Ok(path);
+    }
+
+    Ok(default_user_data_dir()?.join("runtime-shims"))
+}
+
 pub fn default_user_policies_dir() -> Result<PathBuf, ConfigError> {
     let home = env::var("HOME").map_err(|source| ConfigError::MissingHome { source })?;
 

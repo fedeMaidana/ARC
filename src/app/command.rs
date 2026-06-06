@@ -10,6 +10,7 @@ use crate::json_api;
 use crate::output;
 use crate::policy;
 use crate::request::Request;
+use crate::shims;
 use crate::tui;
 
 use super::approval;
@@ -30,6 +31,10 @@ pub fn handle(command: CliCommand) -> Result<i32> {
         CliCommand::AgentsSync => handle_agents_sync_command(),
         CliCommand::AgentsEnv(request) => handle_agents_env_command(request),
         CliCommand::AgentsHelp => handle_agents_help_command(),
+        CliCommand::ShimsInstall => handle_shims_install_command(),
+        CliCommand::ShimsList => handle_shims_list_command(),
+        CliCommand::ShimsPath => handle_shims_path_command(),
+        CliCommand::ShimsHelp => handle_shims_help_command(),
         CliCommand::DecideJson => handle_decide_json_command(),
         CliCommand::Tui => handle_tui_command(),
         CliCommand::PolicyRequest(request) => handle_policy_request(request),
@@ -127,6 +132,41 @@ fn handle_agents_env_command(request: AgentEnvRequest) -> Result<i32> {
 
 fn handle_agents_help_command() -> Result<i32> {
     output::print_agents_usage();
+
+    Ok(2)
+}
+
+fn handle_shims_install_command() -> Result<i32> {
+    let registry_path = config::default_user_agent_registry_path().context("could not resolve ARC agent registry path")?;
+    let launcher_dir = config::default_user_launcher_dir().context("could not resolve ARC launcher directory")?;
+    let report = shims::install_agent_launchers(&registry_path, &launcher_dir).context("could not install ARC launcher shims")?;
+
+    output::print_shims_install_report(&report);
+
+    Ok(0)
+}
+
+fn handle_shims_list_command() -> Result<i32> {
+    let registry_path = config::default_user_agent_registry_path().context("could not resolve ARC agent registry path")?;
+    let launcher_dir = config::default_user_launcher_dir().context("could not resolve ARC launcher directory")?;
+    let report = shims::list_agent_launchers(&registry_path, &launcher_dir).context("could not list ARC launcher shims")?;
+
+    output::print_shims_list_report(&report);
+
+    Ok(0)
+}
+
+fn handle_shims_path_command() -> Result<i32> {
+    let launcher_dir = config::default_user_launcher_dir().context("could not resolve ARC launcher directory")?;
+    let runtime_shims_dir = config::default_user_runtime_shims_dir().context("could not resolve ARC runtime shims directory")?;
+
+    output::print_shims_path(&launcher_dir, &runtime_shims_dir);
+
+    Ok(0)
+}
+
+fn handle_shims_help_command() -> Result<i32> {
+    output::print_shims_usage();
 
     Ok(2)
 }

@@ -18,8 +18,8 @@ pub use self::model::{
     ExecutionEnvironmentVariable, HttpConfig, PolicyConfig, RegoPolicyConfig, ResourcesConfig,
 };
 pub use self::paths::{
-    default_user_agent_registry_path, default_user_data_dir, default_user_policies_dir, default_user_policy_path,
-    runtime_config_source_path,
+    default_user_agent_registry_path, default_user_data_dir, default_user_launcher_dir, default_user_policies_dir,
+    default_user_policy_path, default_user_runtime_shims_dir, runtime_config_source_path,
 };
 pub use self::rules::{ConsoleCommandPolicy, ConsoleSubcommandPolicy, DefaultPolicyAction};
 pub use self::validation::{ConfigValidationError, ConfigValidationIssue, validate};

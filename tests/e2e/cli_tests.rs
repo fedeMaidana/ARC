@@ -14,6 +14,9 @@ mod config_tests;
 #[path = "cli_tests/agent_tests.rs"]
 mod agent_tests;
 
+#[path = "cli_tests/shim_tests.rs"]
+mod shim_tests;
+
 #[path = "cli_tests/human_flow_tests.rs"]
 mod human_flow_tests;
 

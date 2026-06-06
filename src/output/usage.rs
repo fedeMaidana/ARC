@@ -35,6 +35,17 @@ pub fn print_usage() {
     println!("      {}", ui::dim("Show agent command usage"));
     println!();
 
+    println!("{}", ui::section("Shims"));
+    println!("  {}", ui::bold("arc shims path"));
+    println!("      {}", ui::dim("Show ARC launcher and runtime shim directories"));
+    println!("  {}", ui::bold("arc shims install"));
+    println!("      {}", ui::dim("Install launcher shims for registered agents"));
+    println!("  {}", ui::bold("arc shims list"));
+    println!("      {}", ui::dim("Show registered launcher shim status"));
+    println!("  {}", ui::bold("arc shims help"));
+    println!("      {}", ui::dim("Show shim command usage"));
+    println!();
+
     println!("{}", ui::section("Policy"));
     println!("  {}", ui::bold("arc run <command> [args...]"));
     println!("  {}", ui::bold("arc check run <command> [args...]"));
@@ -52,6 +63,8 @@ pub fn print_usage() {
     println!("  ARC_REGO_POLICY_PATH=~/.config/arc/policies.d");
     println!("  ARC_REGO_ENTRYPOINT=data.arc.decision");
     println!("  ARC_AGENT_REGISTRY_PATH=~/.local/share/arc/agents.json");
+    println!("  ARC_LAUNCHER_DIR=~/.local/share/arc/launchers");
+    println!("  ARC_RUNTIME_SHIMS_DIR=~/.local/share/arc/runtime-shims");
     println!("  ARC_AGENT_SOURCES=claude-code|Claude Code|local_agent|true");
     println!("  ARC_SOURCE=claude-code");
     println!("  ARC_AUDIT_ENABLED=true");
@@ -67,6 +80,9 @@ pub fn print_usage() {
     println!("  cargo run -q -- agents scan --known");
     println!("  cargo run -q -- agents sync");
     println!("  cargo run -q -- agents list");
+    println!("  cargo run -q -- shims path");
+    println!("  cargo run -q -- shims install");
+    println!("  cargo run -q -- shims list");
     println!("  cargo run -q -- agents env claude-code --name \"Claude Code\"");
     println!("  cargo run -q -- run ls -la");
     println!("  cargo run -q -- check run rm -rf /");
@@ -130,4 +146,21 @@ pub fn print_agents_usage() {
     println!("  arc agents env claude-code --name \"Claude Code\"");
     println!("  arc agents env codex --name \"Codex\"");
     println!("  arc agents env personal-agent --name \"Personal Agent\" --kind custom");
+}
+
+pub fn print_shims_usage() {
+    println!("{}", ui::section("Shim usage"));
+    println!("  {}", ui::bold("arc shims path"));
+    println!("      {}", ui::dim("Show ARC launcher and runtime shim directories"));
+    println!();
+    println!("  {}", ui::bold("arc shims install"));
+    println!("      {}", ui::dim("Install launcher shims for registered agents"));
+    println!();
+    println!("  {}", ui::bold("arc shims list"));
+    println!("      {}", ui::dim("Show registered launcher shim status"));
+    println!();
+    println!("  {}", ui::dim("Examples:"));
+    println!("  arc init");
+    println!("  arc shims install");
+    println!("  arc shims list");
 }
