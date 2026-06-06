@@ -8,6 +8,8 @@ pub fn print_usage() {
     println!("{}", ui::section("Setup"));
     println!("  {}", ui::bold("arc init"));
     println!("      {}", ui::dim("Create the default Rego policy and sync detected agents"));
+    println!("  {}", ui::bold("arc doctor"));
+    println!("      {}", ui::dim("Check whether ARC is ready to protect registered agents"));
     println!();
 
     println!("{}", ui::section("Runtime settings"));
@@ -73,6 +75,7 @@ pub fn print_usage() {
 
     println!("{}", ui::section("Development"));
     println!("  cargo run -q -- init");
+    println!("  cargo run -q -- doctor");
     println!("  cargo run -q -- settings path");
     println!("  cargo run -q -- settings check");
     println!("  cargo run -q -- settings show");

@@ -98,6 +98,7 @@ pub struct ShellShimRequest {
 
 pub enum CliCommand {
     Init,
+    Doctor,
     SettingsPath,
     SettingsCheck,
     SettingsShow,
@@ -129,6 +130,7 @@ impl CliCommand {
         match args[1].as_str() {
             "help" | "-h" | "--help" => Ok(Self::Help),
             "init" => Ok(Self::Init),
+            "doctor" => Ok(Self::Doctor),
             "settings" | "config" => Self::parse_runtime_settings_command(args),
             "agents" => Self::parse_agents_command(args),
             "shims" => Self::parse_shims_command(args),

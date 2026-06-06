@@ -5,6 +5,7 @@ use anyhow::{Context, Result};
 use crate::agent;
 use crate::cli::{AgentEnvRequest, AgentScanRequest, CliCommand, ShellShimRequest};
 use crate::config::{self, AgentSourceConfig};
+use crate::doctor;
 use crate::executor;
 use crate::json_api;
 use crate::output;
@@ -22,6 +23,7 @@ use super::json;
 pub fn handle(command: CliCommand) -> Result<i32> {
     match command {
         CliCommand::Init => handle_init_command(),
+        CliCommand::Doctor => handle_doctor_command(),
         CliCommand::SettingsPath => handle_settings_path_command(),
         CliCommand::SettingsCheck => handle_settings_check_command(),
         CliCommand::SettingsShow => handle_settings_show_command(),
@@ -51,6 +53,15 @@ fn handle_init_command() -> Result<i32> {
     output::print_init_result(&result);
 
     Ok(0)
+}
+
+fn handle_doctor_command() -> Result<i32> {
+    let report = doctor::run_doctor().context("could not run ARC doctor")?;
+    let exit_code = if report.has_failures() { 1 } else { 0 };
+
+    output::print_doctor_report(&report);
+
+    Ok(exit_code)
 }
 
 fn handle_settings_path_command() -> Result<i32> {

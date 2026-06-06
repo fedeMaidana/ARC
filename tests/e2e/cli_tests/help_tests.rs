@@ -17,6 +17,8 @@ fn help_command_prints_usage() {
     assert!(stdout.contains("Setup"));
     assert!(stdout.contains("arc init"));
     assert!(stdout.contains("Create the default Rego policy and sync detected agents"));
+    assert!(stdout.contains("arc doctor"));
+    assert!(stdout.contains("Check whether ARC is ready to protect registered agents"));
 
     assert!(stdout.contains("Runtime settings"));
     assert!(stdout.contains("arc settings path"));
