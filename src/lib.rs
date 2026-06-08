@@ -2,6 +2,7 @@
 
 pub mod agent;
 pub mod app;
+pub mod application;
 pub mod ask;
 pub mod audit;
 pub mod cli;

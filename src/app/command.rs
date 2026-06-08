@@ -3,19 +3,16 @@
 use anyhow::{Context, Result};
 
 use crate::agent;
+use crate::application::{self, ApprovalMode};
 use crate::cli::{AgentEnvRequest, AgentScanRequest, CliCommand, ShellShimRequest};
 use crate::config::{self, AgentSourceConfig};
 use crate::doctor;
-use crate::executor;
 use crate::json_api;
 use crate::output;
-use crate::policy;
 use crate::request::Request;
 use crate::shims;
 use crate::tui;
 
-use super::approval;
-use super::audit;
 use super::json;
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -210,20 +207,14 @@ fn handle_decide_json_command() -> Result<i32> {
     };
 
     let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
-    let source = audit::resolve_source("json_api", &loaded_config.agents)?;
 
-    audit::prepare(&loaded_config.audit)?;
+    let report = application::review_action(&request, &loaded_config, "json_api", ApprovalMode::NonInteractive)?;
 
-    let decision = policy::decide(&request, &loaded_config);
-    let execution_report = executor::execute(&request, &decision, &loaded_config.execution, &loaded_config.console);
-
-    audit::record(&source, &loaded_config.audit, &request, &decision, &execution_report)?;
-
-    let response = json_api::decision_response_from_parts(&request, &decision, &execution_report);
+    let response = json_api::decision_response_from_parts(&request, report.decision(), report.execution_report());
 
     json::print_response(&response)?;
 
-    Ok(execution_report.exit_code())
+    Ok(report.execution_report().exit_code())
 }
 
 fn handle_tui_command() -> Result<i32> {
@@ -234,25 +225,16 @@ fn handle_tui_command() -> Result<i32> {
 
 fn handle_policy_request(request: Request) -> Result<i32> {
     let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
-    let source = audit::resolve_source("cli", &loaded_config.agents)?;
 
-    audit::prepare(&loaded_config.audit)?;
+    let review = application::prepare_action_review(&request, &loaded_config, "cli")?;
 
-    let decision = policy::decide(&request, &loaded_config);
+    output::print_decision(&request, review.decision());
 
-    output::print_decision(&request, &decision);
+    let report = application::complete_action_review(&request, &loaded_config, &review, ApprovalMode::Interactive)?;
 
-    let execution_report = if decision.should_ask() && !request.is_check_mode() {
-        approval::ask_and_maybe_execute(&request, &loaded_config.execution, &loaded_config.console)?
-    } else {
-        executor::execute(&request, &decision, &loaded_config.execution, &loaded_config.console)
-    };
+    output::print_execution_report(report.execution_report());
 
-    audit::record(&source, &loaded_config.audit, &request, &decision, &execution_report)?;
-
-    output::print_execution_report(&execution_report);
-
-    Ok(execution_report.exit_code())
+    Ok(report.execution_report().exit_code())
 }
 
 fn handle_help_command() -> Result<i32> {
