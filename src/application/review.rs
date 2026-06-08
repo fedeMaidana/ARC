@@ -1,14 +1,15 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
-use crate::agent::{self, AgentSource};
-use crate::ask::{self, AskAnswer};
-use crate::audit::{self as audit_log, AuditEvent};
+use crate::agent::AgentSource;
+use crate::audit::AuditEvent;
 use crate::config::Config;
 use crate::decision::Decision;
-use crate::executor::{self, ExecutionReport};
+use crate::executor::ExecutionReport;
 use crate::request::Request;
+
+use super::ports::{ArcReviewEnvironment, ReviewEnvironment};
 
 // ─── < Enums > ──────────────────────────────────────────────────────
 
@@ -35,16 +36,40 @@ pub struct ActionReviewReport {
 // ─── < Public Functions > ───────────────────────────────────────────
 
 pub fn review_action(request: &Request, config: &Config, default_source: &str, approval_mode: ApprovalMode) -> Result<ActionReviewReport> {
-    let review = prepare_action_review(request, config, default_source)?;
+    let environment = ArcReviewEnvironment;
 
-    complete_action_review(request, config, &review, approval_mode)
+    review_action_with_environment(request, config, default_source, approval_mode, &environment)
+}
+
+pub fn review_action_with_environment(
+    request: &Request,
+    config: &Config,
+    default_source: &str,
+    approval_mode: ApprovalMode,
+    environment: &impl ReviewEnvironment,
+) -> Result<ActionReviewReport> {
+    let review = prepare_action_review_with_environment(request, config, default_source, environment)?;
+
+    complete_action_review_with_environment(request, config, &review, approval_mode, environment)
 }
 
 pub fn prepare_action_review(request: &Request, config: &Config, default_source: &str) -> Result<ActionReview> {
-    let source = resolve_source(default_source, config)?;
-    prepare_audit_log(config)?;
+    let environment = ArcReviewEnvironment;
 
-    let decision = crate::policy::decide(request, config);
+    prepare_action_review_with_environment(request, config, default_source, &environment)
+}
+
+pub fn prepare_action_review_with_environment(
+    request: &Request,
+    config: &Config,
+    default_source: &str,
+    environment: &impl ReviewEnvironment,
+) -> Result<ActionReview> {
+    let source = environment.resolve_source(default_source, config)?;
+
+    environment.prepare_audit_log(config)?;
+
+    let decision = environment.decide(request, config);
 
     Ok(ActionReview { source, decision })
 }
@@ -55,9 +80,21 @@ pub fn complete_action_review(
     review: &ActionReview,
     approval_mode: ApprovalMode,
 ) -> Result<ActionReviewReport> {
-    let execution_report = execute_reviewed_action(request, config, review.decision(), approval_mode)?;
+    let environment = ArcReviewEnvironment;
 
-    record_action_review(request, config, review, &execution_report)?;
+    complete_action_review_with_environment(request, config, review, approval_mode, &environment)
+}
+
+pub fn complete_action_review_with_environment(
+    request: &Request,
+    config: &Config,
+    review: &ActionReview,
+    approval_mode: ApprovalMode,
+    environment: &impl ReviewEnvironment,
+) -> Result<ActionReviewReport> {
+    let execution_report = execute_reviewed_action(request, config, review.decision(), approval_mode, environment)?;
+
+    record_action_review(request, config, review, &execution_report, environment)?;
 
     Ok(ActionReviewReport {
         source: review.source().clone(),
@@ -94,40 +131,33 @@ impl ActionReviewReport {
 
 // ─── < Private Functions > ──────────────────────────────────────────
 
-fn resolve_source(default_source: &str, config: &Config) -> Result<AgentSource> {
-    agent::resolve_source_from_environment(default_source, &config.agents).context("could not resolve ARC source")
-}
-
-fn prepare_audit_log(config: &Config) -> Result<()> {
-    audit_log::ensure_audit_log_is_writable(&config.audit).context("could not prepare audit log")
-}
-
 fn execute_reviewed_action(
     request: &Request,
     config: &Config,
     decision: &Decision,
     approval_mode: ApprovalMode,
+    environment: &impl ReviewEnvironment,
 ) -> Result<ExecutionReport> {
     if should_ask_user(request, decision, approval_mode) {
-        return ask_and_maybe_execute(request, config);
+        return ask_and_maybe_execute(request, config, environment);
     }
 
-    Ok(executor::execute(request, decision, &config.execution, &config.console))
+    Ok(environment.execute(request, decision, config))
 }
 
 fn should_ask_user(request: &Request, decision: &Decision, approval_mode: ApprovalMode) -> bool {
     matches!(approval_mode, ApprovalMode::Interactive) && decision.should_ask() && !request.is_check_mode()
 }
 
-fn ask_and_maybe_execute(request: &Request, config: &Config) -> Result<ExecutionReport> {
+fn ask_and_maybe_execute(request: &Request, config: &Config, environment: &impl ReviewEnvironment) -> Result<ExecutionReport> {
     let prompt = approval_prompt(request);
+    let approved = environment.request_approval(&prompt)?;
 
-    let answer = ask::ask_yes_no(&prompt).context("could not ask for request approval")?;
-
-    match answer {
-        AskAnswer::Yes => Ok(executor::execute_approved(request, &config.execution, &config.console)),
-        AskAnswer::No => Ok(ExecutionReport::AskDeclined),
+    if approved {
+        return Ok(environment.execute_approved(request, config));
     }
+
+    Ok(ExecutionReport::AskDeclined)
 }
 
 fn approval_prompt(request: &Request) -> String {
@@ -138,8 +168,14 @@ fn approval_prompt(request: &Request) -> String {
     format!("ARC wants to perform `{}`", request.action)
 }
 
-fn record_action_review(request: &Request, config: &Config, review: &ActionReview, execution_report: &ExecutionReport) -> Result<()> {
+fn record_action_review(
+    request: &Request,
+    config: &Config,
+    review: &ActionReview,
+    execution_report: &ExecutionReport,
+    environment: &impl ReviewEnvironment,
+) -> Result<()> {
     let event = AuditEvent::from_parts(review.source(), request, review.decision(), execution_report);
 
-    audit_log::record_event(&config.audit, &event).context("could not write audit log")
+    environment.record_audit_event(config, &event)
 }
