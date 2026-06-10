@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
@@ -24,10 +28,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Rust toolchain
-        run: |
-          rustup default stable
-          rustup component add rustfmt
+      - name: Install toolchain from rust-toolchain.toml
+        run: rustup show
 
       - name: Check formatting
         run: cargo fmt --all --check
@@ -40,10 +42,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Rust toolchain
-        run: |
-          rustup default stable
-          rustup component add clippy
+      - name: Install toolchain from rust-toolchain.toml
+        run: rustup show
 
       - name: Cache cargo registry and build output
         uses: actions/cache@v4
@@ -52,12 +52,12 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: clippy-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          key: clippy-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
           restore-keys: |
             clippy-${{ runner.os }}-
 
       - name: Run clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
   test:
     name: Tests
@@ -67,8 +67,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Rust toolchain
-        run: rustup default stable
+      - name: Install toolchain from rust-toolchain.toml
+        run: rustup show
 
       - name: Cache cargo registry and build output
         uses: actions/cache@v4
@@ -77,21 +77,14 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: test-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          key: test-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
           restore-keys: |
             test-${{ runner.os }}-
 
-      - name: Cache cargo-nextest binary
-        uses: actions/cache@v4
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
         with:
-          path: ~/.cargo/bin/cargo-nextest
-          key: cargo-nextest-${{ runner.os }}
-
-      - name: Install cargo-nextest if missing
-        run: |
-          if ! command -v cargo-nextest >/dev/null 2>&1; then
-            cargo install cargo-nextest --locked
-          fi
+          tool: cargo-nextest
 
       - name: Run tests
-        run: cargo nextest run
+        run: cargo nextest run --locked

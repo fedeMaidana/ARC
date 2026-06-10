@@ -11,6 +11,10 @@ use super::{
     HttpConfig, PolicyConfig, RegoPolicyConfig, ResourcesConfig, default_user_agent_registry_path, runtime_config_source_path,
 };
 
+// ─── < Constants > ──────────────────────────────────────────────────
+
+const BUILTIN_AGENT_SOURCE_IDS: &[&str] = &["cli", "json_api"];
+
 // ─── < Public Functions > ───────────────────────────────────────────
 
 pub fn load_runtime_config() -> Result<Config, ConfigError> {
@@ -324,6 +328,10 @@ fn merge_agent_sources(sources: &mut Vec<AgentSourceConfig>, additional_sources:
 }
 
 fn merge_agent_source(sources: &mut Vec<AgentSourceConfig>, source: AgentSourceConfig) {
+    if BUILTIN_AGENT_SOURCE_IDS.contains(&source.id.as_str()) {
+        return;
+    }
+
     if let Some(existing_source) = sources.iter_mut().find(|existing_source| existing_source.id == source.id) {
         *existing_source = source;
         return;

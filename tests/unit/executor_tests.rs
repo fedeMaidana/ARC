@@ -176,7 +176,7 @@ fn execute_rejects_path_resolution_when_disabled() {
 #[test]
 fn execute_uses_configured_allowed_command_path() {
     let Some(echo_path) = find_executable_in_path("echo") else {
-        return;
+        panic!("echo should be available in PATH for this test");
     };
 
     let request = Request::new(RequestMode::Execute, "run".to_string(), vec!["echo".to_string(), "hola".to_string()]);
@@ -212,7 +212,7 @@ fn execute_uses_configured_allowed_command_path() {
 #[test]
 fn execute_rejects_allowed_path_with_wrong_binary_name() {
     let Some(echo_path) = find_executable_in_path("echo") else {
-        return;
+        panic!("echo should be available in PATH for this test");
     };
 
     let request = Request::new(RequestMode::Execute, "run".to_string(), vec!["git".to_string(), "status".to_string()]);
@@ -279,9 +279,9 @@ fn unique_temp_dir(name: &str) -> std::path::PathBuf {
 }
 
 fn find_executable_in_path(command_name: &str) -> Option<PathBuf> {
-    std::env::var_os("PATH")?.as_encoded_bytes().is_empty().then_some(())?;
+    let path = std::env::var_os("PATH")?;
 
-    for search_path in std::env::split_paths(&std::env::var_os("PATH")?) {
+    for search_path in std::env::split_paths(&path) {
         let candidate = search_path.join(command_name);
 
         if is_executable_file(&candidate) {

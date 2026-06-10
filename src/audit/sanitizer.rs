@@ -27,29 +27,41 @@ pub fn sanitize_field(value: &str) -> String {
 // ─── < Private Functions > ──────────────────────────────────────────
 
 fn redact_sensitive_tokens(value: &str) -> String {
-    value.split_whitespace().map(redact_token).collect::<Vec<String>>().join(" ")
-}
+    let mut output: Vec<String> = Vec::new();
+    let mut redact_next = false;
 
-fn redact_token(token: &str) -> String {
-    let normalized_token = token.to_ascii_lowercase();
+    for token in value.split_whitespace() {
+        if redact_next {
+            output.push("[redacted]".to_string());
+            redact_next = false;
+            continue;
+        }
 
-    if normalized_token == "bearer" {
-        return "[redacted]".to_string();
+        let (replacement, should_redact_next) = redact_token(token);
+
+        output.push(replacement);
+        redact_next = should_redact_next;
     }
 
+    output.join(" ")
+}
+
+fn redact_token(token: &str) -> (String, bool) {
+    let normalized_token = token.to_ascii_lowercase();
+
     if !contains_sensitive_marker(&normalized_token) {
-        return token.to_string();
+        return (token.to_string(), false);
     }
 
     if let Some((key, _value)) = token.split_once('=') {
-        return format!("{key}=[redacted]");
+        return (format!("{key}=[redacted]"), false);
     }
 
     if let Some((key, _value)) = token.split_once(':') {
-        return format!("{key}:[redacted]");
+        return (format!("{key}:[redacted]"), false);
     }
 
-    "[redacted]".to_string()
+    ("[redacted]".to_string(), true)
 }
 
 fn contains_sensitive_marker(value: &str) -> bool {

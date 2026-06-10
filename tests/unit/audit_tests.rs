@@ -78,6 +78,23 @@ fn audit_event_redacts_sensitive_resource_values() {
 }
 
 #[test]
+fn audit_event_redacts_token_following_bearer_keyword() {
+    let request = Request::new(
+        RequestMode::Check,
+        "run".to_string(),
+        vec!["echo".to_string(), "Bearer".to_string(), "super-secret-value".to_string()],
+    );
+
+    let source = AgentSource::builtin("test");
+    let decision = Decision::allow(DecisionReason::ActionAllowed);
+    let execution_report = ExecutionReport::CheckMode { allowed: true };
+
+    let event = AuditEvent::from_parts(&source, &request, &decision, &execution_report);
+
+    assert_eq!(event.resource, Some("echo [redacted] [redacted]".to_string()));
+}
+
+#[test]
 fn audit_event_redacts_sensitive_command_line_values() {
     let request = Request::new(RequestMode::Execute, "run".to_string(), vec!["echo".to_string()]);
 

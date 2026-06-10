@@ -1,10 +1,10 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
 use std::env;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::io::Write;
+use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -151,18 +151,14 @@ impl RegoDecisionOutput {
 // ─── < Private Functions > ──────────────────────────────────────────
 
 fn evaluate_rego(input: PolicyInput<'_>) -> Result<Decision, RegoPolicyError> {
-    let input_path = write_rego_input(input.request())?;
+    let serialized_input = serialize_rego_input(input.request())?;
 
-    let output = run_opa(input, &input_path);
-
-    let _ = fs::remove_file(&input_path);
-
-    let output = output?;
+    let output = run_opa(input, &serialized_input)?;
 
     parse_opa_output(&output)
 }
 
-fn write_rego_input(request: &Request) -> Result<PathBuf, RegoPolicyError> {
+fn serialize_rego_input(request: &Request) -> Result<Vec<u8>, RegoPolicyError> {
     let input = RegoInput {
         request: RegoRequest {
             mode: request_mode_text(request),
@@ -172,15 +168,10 @@ fn write_rego_input(request: &Request) -> Result<PathBuf, RegoPolicyError> {
         },
     };
 
-    let serialized_input = serde_json::to_vec(&input).map_err(|source| RegoPolicyError::SerializeInput { source })?;
-    let input_path = unique_input_path();
-
-    fs::write(&input_path, serialized_input).map_err(|source| RegoPolicyError::WriteInput { source })?;
-
-    Ok(input_path)
+    serde_json::to_vec(&input).map_err(|source| RegoPolicyError::SerializeInput { source })
 }
 
-fn run_opa(input: PolicyInput<'_>, input_path: &Path) -> Result<Output, RegoPolicyError> {
+fn run_opa(input: PolicyInput<'_>, serialized_input: &[u8]) -> Result<Output, RegoPolicyError> {
     let policy_path = expand_home(&input.config().policy.rego.policy_path);
     let timeout = Duration::from_secs(input.config().policy.rego.timeout_seconds);
 
@@ -190,13 +181,22 @@ fn run_opa(input: PolicyInput<'_>, input_path: &Path) -> Result<Output, RegoPoli
         .arg("json")
         .arg("--data")
         .arg(policy_path)
-        .arg("--input")
-        .arg(input_path)
+        .arg("--stdin-input")
         .arg(&input.config().policy.rego.entrypoint)
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|source| RegoPolicyError::StartOpa { source })?;
+
+    if let Some(mut stdin) = child.stdin.take()
+        && let Err(source) = stdin.write_all(serialized_input)
+    {
+        let _ = child.kill();
+        let _ = child.wait_with_output();
+
+        return Err(RegoPolicyError::WriteInput { source });
+    }
 
     match child.wait_timeout(timeout).map_err(|source| RegoPolicyError::StartOpa { source })? {
         Some(_status) => {
@@ -239,12 +239,6 @@ fn rego_command(request: &Request) -> Option<RegoCommand<'_>> {
 
 fn request_mode_text(request: &Request) -> &'static str {
     if request.is_check_mode() { "check" } else { "execute" }
-}
-
-fn unique_input_path() -> PathBuf {
-    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos();
-
-    env::temp_dir().join(format!("arc-rego-input-{}-{timestamp}.json", std::process::id()))
 }
 
 fn expand_home(path: &str) -> PathBuf {
