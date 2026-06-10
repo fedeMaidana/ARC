@@ -6,6 +6,7 @@ mod engine;
 mod http;
 mod input;
 mod native;
+mod native_engine;
 mod output;
 mod rego;
 mod resource;
@@ -16,7 +17,7 @@ mod rules;
 
 pub use self::engine::{PolicyEngine, decide};
 pub use self::input::PolicyInput;
-pub use self::native::NativePolicyEngine;
+pub use self::native_engine::NativePolicyEngine;
 pub use self::output::PolicyDecision;
 pub use self::rego::RegoPolicyEngine;
 pub use self::rules::{ConsoleCommandPolicy, ConsoleSubcommandPolicy, DefaultPolicyAction, PolicyRules};

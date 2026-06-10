@@ -5,7 +5,7 @@ use crate::decision::{Decision, DecisionReason, RiskLevel};
 use crate::request::Request;
 
 use super::input::PolicyInput;
-use super::native::NativePolicyEngine;
+use super::native_engine::NativePolicyEngine;
 use super::output::PolicyDecision;
 use super::rego::RegoPolicyEngine;
 

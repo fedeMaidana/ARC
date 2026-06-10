@@ -3,34 +3,12 @@
 use crate::decision::{Decision, DecisionReason, RiskLevel};
 use crate::request::Request;
 
-use super::engine::PolicyEngine;
-use super::input::PolicyInput;
-use super::output::PolicyDecision;
 use super::rules::{DefaultPolicyAction, PolicyRules};
 use super::{action, console, http, resource, risk};
 
-// ─── < Structs > ────────────────────────────────────────────────────
+// ─── < Public Functions > ───────────────────────────────────────────
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct NativePolicyEngine;
-
-// ─── < Implementations > ────────────────────────────────────────────
-
-impl NativePolicyEngine {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl PolicyEngine for NativePolicyEngine {
-    fn decide(&self, input: PolicyInput<'_>) -> PolicyDecision {
-        PolicyDecision::new(decide_native(input.request(), input.config()))
-    }
-}
-
-// ─── < Private Functions > ──────────────────────────────────────────
-
-fn decide_native(request: &Request, rules: &impl PolicyRules) -> Decision {
+pub fn decide(request: &Request, rules: &impl PolicyRules) -> Decision {
     if let Some(decision) = action::decide(request, rules) {
         return decision;
     }
@@ -57,6 +35,8 @@ fn decide_native(request: &Request, rules: &impl PolicyRules) -> Decision {
 
     action_decision
 }
+
+// ─── < Private Functions > ──────────────────────────────────────────
 
 fn decide_action_policy(request: &Request, rules: &impl PolicyRules) -> Decision {
     let request_risk = risk::for_allowed_request(request);
