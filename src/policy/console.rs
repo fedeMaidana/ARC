@@ -1,14 +1,14 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::config::{Config, ConsoleCommandPolicy, ConsoleSubcommandPolicy};
 use crate::decision::{Decision, DecisionReason, RiskLevel};
 use crate::request::Request;
 
 use super::risk;
+use super::rules::{ConsoleCommandPolicy, ConsoleSubcommandPolicy, PolicyRules};
 
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
+pub fn decide(request: &Request, rules: &impl PolicyRules) -> Option<Decision> {
     if !request.is_run_command() {
         return None;
     }
@@ -17,15 +17,15 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
         return Some(Decision::deny_with_risk(DecisionReason::ConsoleCommandRequired, RiskLevel::Medium));
     };
 
-    if config.console.is_blocked_command(command_name) {
+    if rules.is_blocked_command(command_name) {
         return Some(Decision::deny_with_risk(DecisionReason::ConsoleCommandBlocked, RiskLevel::Critical));
     }
 
-    if let Some(decision) = decide_command_rule(command_name, request, config) {
+    if let Some(decision) = decide_command_rule(command_name, request, rules) {
         return Some(decision);
     }
 
-    let command_policy = config.console.command_policy(command_name);
+    let command_policy = rules.command_policy(command_name);
 
     if command_policy == ConsoleCommandPolicy::Deny {
         return Some(Decision::deny_with_risk(DecisionReason::ConsoleCommandNotAllowed, RiskLevel::High));
@@ -34,7 +34,7 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
     if request
         .command_args()
         .iter()
-        .any(|argument| is_blocked_argument(command_name, argument, config))
+        .any(|argument| is_blocked_argument(command_name, argument, rules))
     {
         return Some(Decision::deny_with_risk(DecisionReason::ConsoleArgumentBlocked, RiskLevel::Critical));
     }
@@ -42,7 +42,7 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
     if request
         .command_args()
         .iter()
-        .any(|argument| config.console.command_argument_should_ask(command_name, argument))
+        .any(|argument| rules.command_argument_should_ask(command_name, argument))
     {
         return Some(Decision::ask_with_risk(
             DecisionReason::ConsoleArgumentRequiresApproval,
@@ -61,10 +61,10 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
 
 // ─── < Private Functions > ──────────────────────────────────────────
 
-fn decide_command_rule(command_name: &str, request: &Request, config: &Config) -> Option<Decision> {
-    let command_rule = config.console.command_rule(command_name)?;
+fn decide_command_rule(command_name: &str, request: &Request, rules: &impl PolicyRules) -> Option<Decision> {
+    let subcommand_policy = rules.subcommand_policy(command_name, primary_subcommand(request))?;
 
-    match command_rule.subcommand_policy(primary_subcommand(request)) {
+    match subcommand_policy {
         ConsoleSubcommandPolicy::Allowed => None,
         ConsoleSubcommandPolicy::Ask => Some(Decision::ask_with_risk(
             DecisionReason::ConsoleSubcommandRequiresApproval,
@@ -86,9 +86,9 @@ fn primary_subcommand(request: &Request) -> Option<&str> {
     Some(subcommand)
 }
 
-fn is_blocked_argument(command_name: &str, argument: &str, config: &Config) -> bool {
-    config.console.is_blocked_argument(argument)
-        || config.console.is_blocked_command_argument(command_name, argument)
-        || config.resources.is_protected_resource(argument)
-        || config.resources.is_blocked_path(argument)
+fn is_blocked_argument(command_name: &str, argument: &str, rules: &impl PolicyRules) -> bool {
+    rules.is_blocked_console_argument(argument)
+        || rules.is_blocked_command_argument(command_name, argument)
+        || rules.is_protected_resource(argument)
+        || rules.is_blocked_path(argument)
 }

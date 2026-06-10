@@ -1,13 +1,14 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
-use crate::config::Config;
 use crate::decision::{Decision, DecisionReason, RiskLevel};
 use crate::http_target;
 use crate::request::Request;
 
+use super::rules::PolicyRules;
+
 // ─── < Public Functions > ───────────────────────────────────────────
 
-pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
+pub fn decide(request: &Request, rules: &impl PolicyRules) -> Option<Decision> {
     if !request.is_http_get() {
         return None;
     }
@@ -16,7 +17,7 @@ pub fn decide(request: &Request, config: &Config) -> Option<Decision> {
         return Some(Decision::deny_with_risk(DecisionReason::InvalidHttpUrl, RiskLevel::Medium));
     }
 
-    if config.http.is_blocked_target(&request.resource) {
+    if rules.is_blocked_http_target(&request.resource) {
         return Some(Decision::deny_with_risk(DecisionReason::HttpTargetBlocked, RiskLevel::High));
     }
 

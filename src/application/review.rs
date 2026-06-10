@@ -9,7 +9,7 @@ use crate::decision::Decision;
 use crate::executor::ExecutionReport;
 use crate::request::Request;
 
-use super::ports::{ArcReviewEnvironment, ReviewEnvironment};
+use super::ports::ReviewEnvironment;
 
 // ─── < Enums > ──────────────────────────────────────────────────────
 
@@ -28,18 +28,11 @@ pub struct ActionReview {
 }
 
 pub struct ActionReviewReport {
-    source: AgentSource,
     decision: Decision,
     execution_report: ExecutionReport,
 }
 
 // ─── < Public Functions > ───────────────────────────────────────────
-
-pub fn review_action(request: &Request, config: &Config, default_source: &str, approval_mode: ApprovalMode) -> Result<ActionReviewReport> {
-    let environment = ArcReviewEnvironment;
-
-    review_action_with_environment(request, config, default_source, approval_mode, &environment)
-}
 
 pub fn review_action_with_environment(
     request: &Request,
@@ -51,12 +44,6 @@ pub fn review_action_with_environment(
     let review = prepare_action_review_with_environment(request, config, default_source, environment)?;
 
     complete_action_review_with_environment(request, config, &review, approval_mode, environment)
-}
-
-pub fn prepare_action_review(request: &Request, config: &Config, default_source: &str) -> Result<ActionReview> {
-    let environment = ArcReviewEnvironment;
-
-    prepare_action_review_with_environment(request, config, default_source, &environment)
 }
 
 pub fn prepare_action_review_with_environment(
@@ -74,17 +61,6 @@ pub fn prepare_action_review_with_environment(
     Ok(ActionReview { source, decision })
 }
 
-pub fn complete_action_review(
-    request: &Request,
-    config: &Config,
-    review: &ActionReview,
-    approval_mode: ApprovalMode,
-) -> Result<ActionReviewReport> {
-    let environment = ArcReviewEnvironment;
-
-    complete_action_review_with_environment(request, config, review, approval_mode, &environment)
-}
-
 pub fn complete_action_review_with_environment(
     request: &Request,
     config: &Config,
@@ -97,7 +73,6 @@ pub fn complete_action_review_with_environment(
     record_action_review(request, config, review, &execution_report, environment)?;
 
     Ok(ActionReviewReport {
-        source: review.source().clone(),
         decision: *review.decision(),
         execution_report,
     })
@@ -116,10 +91,6 @@ impl ActionReview {
 }
 
 impl ActionReviewReport {
-    pub fn source(&self) -> &AgentSource {
-        &self.source
-    }
-
     pub fn decision(&self) -> &Decision {
         &self.decision
     }

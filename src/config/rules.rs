@@ -1,8 +1,69 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use crate::policy::{ConsoleCommandPolicy, ConsoleSubcommandPolicy, DefaultPolicyAction, PolicyRules};
 use crate::{http_target, resource};
 
-use super::{ActionsConfig, ConsoleCommandRule, ConsoleConfig, HttpConfig, PolicyConfig, ResourcesConfig};
+use super::{ActionsConfig, Config, ConsoleCommandRule, ConsoleConfig, HttpConfig, PolicyConfig, ResourcesConfig};
+
+// ─── < Policy Rules Port > ──────────────────────────────────────────
+
+impl PolicyRules for Config {
+    fn is_blocked_action(&self, action: &str) -> bool {
+        self.actions.is_blocked_action(action)
+    }
+
+    fn is_allowed_action(&self, action: &str) -> bool {
+        self.actions.is_allowed_action(action)
+    }
+
+    fn action_needs_resource(&self, action: &str) -> bool {
+        self.actions.action_needs_resource(action)
+    }
+
+    fn action_should_ask(&self, action: &str) -> bool {
+        self.actions.action_should_ask(action)
+    }
+
+    fn default_action(&self) -> DefaultPolicyAction {
+        self.policy.default_action_policy()
+    }
+
+    fn is_blocked_command(&self, command: &str) -> bool {
+        self.console.is_blocked_command(command)
+    }
+
+    fn command_policy(&self, command: &str) -> ConsoleCommandPolicy {
+        self.console.command_policy(command)
+    }
+
+    fn command_argument_should_ask(&self, command: &str, argument: &str) -> bool {
+        self.console.command_argument_should_ask(command, argument)
+    }
+
+    fn is_blocked_console_argument(&self, argument: &str) -> bool {
+        self.console.is_blocked_argument(argument)
+    }
+
+    fn is_blocked_command_argument(&self, command: &str, argument: &str) -> bool {
+        self.console.is_blocked_command_argument(command, argument)
+    }
+
+    fn subcommand_policy(&self, command: &str, subcommand: Option<&str>) -> Option<ConsoleSubcommandPolicy> {
+        self.console.command_rule(command).map(|rule| rule.subcommand_policy(subcommand))
+    }
+
+    fn is_protected_resource(&self, resource: &str) -> bool {
+        self.resources.is_protected_resource(resource)
+    }
+
+    fn is_blocked_path(&self, resource: &str) -> bool {
+        self.resources.is_blocked_path(resource)
+    }
+
+    fn is_blocked_http_target(&self, resource: &str) -> bool {
+        self.http.is_blocked_target(resource)
+    }
+}
 
 // ─── < Implementations > ────────────────────────────────────────────
 
@@ -202,29 +263,4 @@ impl ConsoleCommandRule {
     fn argument_should_ask(&self, argument: &str) -> bool {
         self.ask_arguments.iter().any(|ask| ask == argument)
     }
-}
-
-// ─── < Enums > ──────────────────────────────────────────────────────
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DefaultPolicyAction {
-    Allow,
-    Ask,
-    Deny,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConsoleCommandPolicy {
-    Allow,
-    Ask,
-    Deny,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConsoleSubcommandPolicy {
-    Allowed,
-    Ask,
-    Blocked,
-    NotAllowed,
-    Required,
 }

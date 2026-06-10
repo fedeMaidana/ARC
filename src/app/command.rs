@@ -13,6 +13,7 @@ use crate::request::Request;
 use crate::shims;
 use crate::tui;
 
+use super::environment::ArcReviewEnvironment;
 use super::json;
 
 // ─── < Public Functions > ───────────────────────────────────────────
@@ -208,7 +209,9 @@ fn handle_decide_json_command() -> Result<i32> {
 
     let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
 
-    let report = application::review_action(&request, &loaded_config, "json_api", ApprovalMode::NonInteractive)?;
+    let environment = ArcReviewEnvironment;
+    let report =
+        application::review_action_with_environment(&request, &loaded_config, "json_api", ApprovalMode::NonInteractive, &environment)?;
 
     let response = json_api::decision_response_from_parts(&request, report.decision(), report.execution_report());
 
@@ -226,11 +229,14 @@ fn handle_tui_command() -> Result<i32> {
 fn handle_policy_request(request: Request) -> Result<i32> {
     let (loaded_config, _source) = config::load_from_default_locations().context("could not load ARC runtime config")?;
 
-    let review = application::prepare_action_review(&request, &loaded_config, "cli")?;
+    let environment = ArcReviewEnvironment;
+
+    let review = application::prepare_action_review_with_environment(&request, &loaded_config, "cli", &environment)?;
 
     output::print_decision(&request, review.decision());
 
-    let report = application::complete_action_review(&request, &loaded_config, &review, ApprovalMode::Interactive)?;
+    let report =
+        application::complete_action_review_with_environment(&request, &loaded_config, &review, ApprovalMode::Interactive, &environment)?;
 
     output::print_execution_report(report.execution_report());
 

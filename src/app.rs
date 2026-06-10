@@ -1,6 +1,7 @@
 // ─── < Modules > ────────────────────────────────────────────────────
 
 mod command;
+mod environment;
 mod json;
 mod runner;
 
