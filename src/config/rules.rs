@@ -114,7 +114,41 @@ impl ResourcesConfig {
 
 impl HttpConfig {
     pub fn is_blocked_target(&self, resource: &str) -> bool {
-        http_target::is_blocked_by_config(resource, self)
+        let Some(target) = http_target::parse(resource) else {
+            return false;
+        };
+
+        if !self.is_allowed_scheme(target.scheme()) {
+            return true;
+        }
+
+        if self.is_blocked_host(target.host()) {
+            return true;
+        }
+
+        if self.block_localhost && target.is_loopback_or_unspecified() {
+            return true;
+        }
+
+        if self.block_private_networks && target.is_private_network() {
+            return true;
+        }
+
+        if self.block_link_local && target.is_link_local() {
+            return true;
+        }
+
+        if self.block_metadata_services && target.is_metadata_service() {
+            return true;
+        }
+
+        if self.blocked_cidrs.iter().any(|cidr| target.is_in_cidr(cidr)) {
+            return true;
+        }
+
+        self.blocked_targets
+            .iter()
+            .any(|blocked_target| http_target::matches_blocked_target(resource, blocked_target))
     }
 
     pub fn is_allowed_scheme(&self, scheme: &str) -> bool {

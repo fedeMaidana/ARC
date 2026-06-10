@@ -5,8 +5,6 @@ use std::net::IpAddr;
 use ipnet::IpNet;
 use url::Url;
 
-use crate::config::HttpConfig;
-
 // ─── < Structs > ────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,33 +19,6 @@ pub struct HttpTarget {
 
 pub fn is_valid_http_url(resource: &str) -> bool {
     parse(resource).is_some()
-}
-
-pub fn is_blocked_by_config(resource: &str, config: &HttpConfig) -> bool {
-    let Some(target) = parse(resource) else {
-        return false;
-    };
-
-    if !config.is_allowed_scheme(&target.scheme) {
-        return true;
-    }
-
-    if config.is_blocked_host(&target.host) {
-        return true;
-    }
-
-    if is_blocked_ip_target(&target, config) {
-        return true;
-    }
-
-    if is_blocked_by_cidr(&target, config) {
-        return true;
-    }
-
-    config
-        .blocked_targets
-        .iter()
-        .any(|blocked_target| matches_blocked_target(resource, blocked_target))
 }
 
 pub fn matches_blocked_target(resource: &str, blocked_target: &str) -> bool {
@@ -90,6 +61,45 @@ pub fn parse(resource: &str) -> Option<HttpTarget> {
 // ─── < Implementations > ────────────────────────────────────────────
 
 impl HttpTarget {
+    // ─── Pure accessors (used by the config adapter) ───
+
+    pub fn scheme(&self) -> &str {
+        &self.scheme
+    }
+
+    pub fn host(&self) -> &str {
+        &self.host
+    }
+
+    // ─── Pure target classification (used by the config adapter) ───
+
+    pub fn is_loopback_or_unspecified(&self) -> bool {
+        self.ip_addr()
+            .is_some_and(|ip_addr| ip_addr.is_loopback() || ip_addr.is_unspecified())
+    }
+
+    pub fn is_private_network(&self) -> bool {
+        self.ip_addr().is_some_and(is_private_ip)
+    }
+
+    pub fn is_link_local(&self) -> bool {
+        self.ip_addr().is_some_and(is_link_local_ip)
+    }
+
+    pub fn is_metadata_service(&self) -> bool {
+        self.ip_addr().is_some_and(is_metadata_service_ip)
+    }
+
+    pub fn is_in_cidr(&self, cidr: &str) -> bool {
+        let Some(ip_addr) = self.ip_addr() else {
+            return false;
+        };
+
+        cidr.parse::<IpNet>().map(|network| network.contains(&ip_addr)).unwrap_or(false)
+    }
+
+    // ─── Target-vs-target matching ───
+
     fn matches(&self, blocked_target: &Self) -> bool {
         self.scheme == blocked_target.scheme
             && self.host == blocked_target.host
@@ -128,42 +138,6 @@ impl HttpTarget {
 }
 
 // ─── < Private Functions > ──────────────────────────────────────────
-
-fn is_blocked_ip_target(target: &HttpTarget, config: &HttpConfig) -> bool {
-    let Some(ip_addr) = target.ip_addr() else {
-        return false;
-    };
-
-    if config.block_localhost && (ip_addr.is_loopback() || ip_addr.is_unspecified()) {
-        return true;
-    }
-
-    if config.block_private_networks && is_private_ip(ip_addr) {
-        return true;
-    }
-
-    if config.block_link_local && is_link_local_ip(ip_addr) {
-        return true;
-    }
-
-    if config.block_metadata_services && is_metadata_service_ip(ip_addr) {
-        return true;
-    }
-
-    false
-}
-
-fn is_blocked_by_cidr(target: &HttpTarget, config: &HttpConfig) -> bool {
-    let Some(ip_addr) = target.ip_addr() else {
-        return false;
-    };
-
-    config
-        .blocked_cidrs
-        .iter()
-        .filter_map(|cidr| cidr.parse::<IpNet>().ok())
-        .any(|network| network.contains(&ip_addr))
-}
 
 fn is_private_ip(ip_addr: IpAddr) -> bool {
     match ip_addr {
