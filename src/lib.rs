@@ -1,33 +1,23 @@
-// ─── < Domain (core) > ──────────────────────────────────────────────
-
-pub mod decision;
-pub mod http_target;
-pub mod policy;
-pub mod request;
-pub mod resource;
-
-// ─── < Application > ────────────────────────────────────────────────
-
-pub(crate) mod application;
-
-// ─── < Infrastructure (adapters) > ──────────────────────────────────
+// ─── < Capabilities > ───────────────────────────────────────────────
 
 pub mod agent;
+pub mod app;
 pub mod audit;
 pub mod config;
 pub(crate) mod doctor;
 pub mod executor;
-pub mod json_api;
+pub(crate) mod interface;
+pub(crate) mod matching;
+pub mod policy;
+pub(crate) mod reviewing;
 pub(crate) mod shims;
 
-// ─── < Presentation > ───────────────────────────────────────────────
+// ─── < Stable Module Paths > ────────────────────────────────────────
 
-pub(crate) mod ask;
-pub mod cli;
-pub(crate) mod output;
-pub(crate) mod tui;
-pub(crate) mod ui;
+pub(crate) use reviewing::application;
+pub use reviewing::{decision, request};
 
-// ─── < Composition root > ───────────────────────────────────────────
+pub use matching::{http_target, resource};
 
-pub mod app;
+pub(crate) use interface::{ask, output, tui, ui};
+pub use interface::{cli, json_api};
