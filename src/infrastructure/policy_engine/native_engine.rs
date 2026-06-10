@@ -1,8 +1,9 @@
 // ─── < Imports > ────────────────────────────────────────────────────
 
+use crate::domain::policy::native;
+
 use super::engine::PolicyEngine;
 use super::input::PolicyInput;
-use super::native;
 use super::output::PolicyDecision;
 
 // ─── < Structs > ────────────────────────────────────────────────────

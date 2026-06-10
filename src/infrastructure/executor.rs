@@ -1,13 +1,12 @@
 // ─── < Modules > ────────────────────────────────────────────────────
 
-mod error;
-mod event;
-mod path;
-mod sanitizer;
-mod writer;
+mod command;
+mod console;
+mod engine;
+mod environment;
+mod output;
+mod process;
 
 // ─── < Public Exports > ─────────────────────────────────────────────
 
-pub use self::error::AuditError;
-pub use self::event::{AUDIT_SCHEMA_VERSION, AuditEvent, AuditExecution};
-pub use self::writer::{ensure_audit_log_is_writable, record_event};
+pub use self::engine::{execute, execute_approved};

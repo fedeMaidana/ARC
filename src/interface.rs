@@ -1,4 +1,4 @@
-// ─── < Capability: Interface > ──────────────────────────────────────
+// ─── < Layer: Interface > ───────────────────────────────────────────
 
 pub mod cli;
 pub mod json_api;

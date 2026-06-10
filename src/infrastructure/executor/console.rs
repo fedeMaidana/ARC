@@ -3,11 +3,11 @@
 use std::process::{Command, Stdio};
 
 use crate::config::{ConsoleConfig, ExecutionConfig};
+use crate::domain::execution::{CommandExecutionError, CommandExecutionReport, CommandTimeoutReport, ExecutionReport};
 use crate::request::Request;
 
 use super::command::resolve_command_path;
 use super::environment::apply_execution_environment;
-use super::model::{CommandExecutionError, CommandExecutionReport, CommandTimeoutReport, ExecutionReport};
 use super::output::{capture_output, join_output};
 use super::process::{CommandWaitResult, wait_for_child};
 

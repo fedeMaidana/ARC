@@ -2,10 +2,10 @@
 
 use crate::config::{ConsoleConfig, ExecutionConfig};
 use crate::decision::Decision;
+use crate::domain::execution::ExecutionReport;
 use crate::request::Request;
 
 use super::console;
-use super::model::ExecutionReport;
 
 // ─── < Public Functions > ───────────────────────────────────────────
 

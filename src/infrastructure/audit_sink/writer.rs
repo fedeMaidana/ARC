@@ -5,9 +5,10 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::config::AuditConfig;
+use crate::domain::audit::AuditEvent;
 
+use super::AuditError;
 use super::path::resolve_audit_path;
-use super::{AuditError, AuditEvent};
 
 // ─── < Public Functions > ───────────────────────────────────────────
 

@@ -5,8 +5,7 @@ use std::env;
 use thiserror::Error;
 
 use crate::config::AgentsConfig;
-
-use super::source::AgentSource;
+use crate::domain::agent::AgentSource;
 
 // ─── < Errors > ─────────────────────────────────────────────────────
 
